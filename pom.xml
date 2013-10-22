@@ -1,0 +1,56 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<parent>
+		<artifactId>parent</artifactId>
+		<groupId>com.googlecode.n_orm</groupId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>mongoDB</artifactId>
+	<name>mongoDB driver for n-orm</name>
+	<version>mongoDB-${mongoDB.version}-n-orm-${project.parent.version}</version>
+	<packaging>jar</packaging>
+
+	<scm>
+		<connection>scm:hg:http://n-orm.googlecode.com/hg/</connection>
+		<developerConnection>scm:hg:https://n-orm.googlecode.com/hg/</developerConnection>
+		<url>http://n-orm.googlecode.com/hg/</url>
+	</scm>
+	
+	<properties>
+		<mongoDB.version>2.10.1</mongoDB.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongo-java-driver</artifactId>
+			<version>${mongoDB.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.googlecode.n_orm</groupId>
+			<artifactId>storage</artifactId>
+			<version>${project.parent.version}</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.googlecode.n_orm</groupId>
+			<artifactId>storage</artifactId>
+			<version>${project.parent.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<description>mongoDB driver for n-orm.</description>
+	<url>http://n-orm.googlecode.com/</url>
+	<distributionManagement>
+		<site>
+			<id>wiki</id>
+			<name>n-orm Wiki pages</name>
+			<url>file://${basedir}/../../n-orm.wiki/mongoDB</url>
+		</site>
+	</distributionManagement>
+</project>
