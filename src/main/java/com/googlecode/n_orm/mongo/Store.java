@@ -2,6 +2,8 @@ package com.googlecode.n_orm.mongo;
 
 import java.util.Set;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.net.InetAddress;
 
 import com.googlecode.n_orm.DatabaseNotReachedException;
@@ -33,16 +35,25 @@ public class Store
 			try {
 				host = InetAddress.getLocalHost().getHostAddress();
 			} catch (Exception e) {
+				Mongo.mongoLog.log(Level.WARNING, "Could not get localhost.");
 				host = "localhost";
 			}
 		}
 
 		try {
+			Mongo.mongoLog.log(
+				Level.FINE,
+				"Trying to connect to the mongo database "+host+":"+port
+			);
 			mongoClient = (port == 0)
 				? new MongoClient(host)
 				: new MongoClient(host, port);
 
 		} catch(Exception e) {
+			Mongo.mongoLog.log(
+				Level.SEVERE,
+				"Could not connect to the mongo database "+host+":"+port
+			);
 			throw new DatabaseNotReachedException(e);
 		}
 	}
