@@ -2,20 +2,49 @@ package com.googlecode.n_orm.mongo;
 
 import java.util.Set;
 import java.util.Map;
+import java.net.InetAddress;
 
 import com.googlecode.n_orm.DatabaseNotReachedException;
 
 import com.googlecode.n_orm.storeapi.Constraint;
+import com.googlecode.n_orm.storeapi.GenericStore;
 import com.googlecode.n_orm.storeapi.MetaInformation;
 import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
 import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 
+import com.mongodb.MongoClient;
+import com.mongodb.MongoException;
 
-public class Store implements com.googlecode.n_orm.storeapi.Store
+public class Store
+	implements
+		com.googlecode.n_orm.storeapi.Store,
+		com.googlecode.n_orm.storeapi.GenericStore
 {
+	private int port = 0;
+	private String host = null;
+
+	private MongoClient mongoClient;
+
+
 	public void start()
 		throws DatabaseNotReachedException
 	{
+		if (host == null) {
+			try {
+				host = InetAddress.getLocalHost().getHostAddress();
+			} catch (Exception e) {
+				host = "localhost";
+			}
+		}
+
+		try {
+			mongoClient = (port == 0)
+				? new MongoClient(host)
+				: new MongoClient(host, port);
+
+		} catch(Exception e) {
+			throw new DatabaseNotReachedException(e);
+		}
 	}
 
 	public boolean hasTable(String tableName)
@@ -94,5 +123,15 @@ public class Store implements com.googlecode.n_orm.storeapi.Store
 		throws DatabaseNotReachedException
 	{
 		return 0;
+	}
+
+	public void setHost(String host)
+	{
+		this.host = host;
+	}
+
+	public void setPort(int port)
+	{
+		this.port = port;
 	}
 }
