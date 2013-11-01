@@ -90,7 +90,15 @@ public class MongoStore implements Store, GenericStore
 	public boolean hasTable(String tableName)
 		throws DatabaseNotReachedException
 	{
-		return false;
+		boolean ret;
+
+		try {
+			ret = mongoDB.collectionExists(tableName);
+		} catch (Exception e) {
+			throw new DatabaseNotReachedException(e);
+		}
+
+		return ret;
 	}
 
 	public void delete(MetaInformation meta, String table, String id)
