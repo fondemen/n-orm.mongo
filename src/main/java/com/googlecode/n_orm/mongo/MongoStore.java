@@ -19,13 +19,23 @@ import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 
+
+/* Implementation notes:
+ *
+ * A Table ~~ A Collection                        ~~ A storable class
+ * A Row   ~~ A first level entry in a collection
+**/
+
 public class MongoStore implements Store, GenericStore
 {
 	private int    port = 0;
 	private String host = null;
 
-	private static String DB_NAME = "n_orm";
+	private static String DB_NAME    = "n_orm";
+	private static short  MONGO_PORT =  27017;
+	private static String MONGO_HOST = "localhost";
 
+	private DB mongoDB;
 	private MongoClient mongoClient;
 
 
@@ -36,9 +46,15 @@ public class MongoStore implements Store, GenericStore
 			try {
 				host = InetAddress.getLocalHost().getHostAddress();
 			} catch (Exception e) {
-				Mongo.mongoLog.log(Level.WARNING, "Could not get localhost.");
-				host = "localhost";
+				Mongo.mongoLog.log(
+					Level.WARNING,
+					"Could not get local addr. \"localhost\" will be used.");
+				host = MONGO_HOST;
 			}
+		}
+
+		if (port == 0) {
+			port = MONGO_PORT;
 		}
 
 		try {
@@ -46,18 +62,26 @@ public class MongoStore implements Store, GenericStore
 				Level.FINE,
 				"Trying to connect to the mongo database "+host+":"+port
 			);
-			mongoClient = (port == 0)
-				? new MongoClient(host)
-				: new MongoClient(host, port);
-
-			// MongoClient won't complain that it couldn't connect to the
-			// database until the first access attempt. Force access to the DB
-			mongoClient.getDB(DB_NAME);
+			mongoClient = new MongoClient(host, port);
 
 		} catch(Exception e) {
 			Mongo.mongoLog.log(
 				Level.SEVERE,
 				"Could not find "+host+":"+port
+			);
+			throw new DatabaseNotReachedException(e);
+		}
+
+		try {
+			mongoDB = mongoClient.getDB(DB_NAME);
+			// Mongo won't complain that it couldn't connect to the database
+			// until the first access attempt. Force access to the DB.
+			mongoDB.getCollectionNames();
+
+		} catch(Exception e) {
+			Mongo.mongoLog.log(
+				Level.SEVERE,
+				"Could not find a running database on "+host+":"+port
 			);
 			throw new DatabaseNotReachedException(e);
 		}
