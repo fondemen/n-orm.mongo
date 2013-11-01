@@ -14,6 +14,7 @@ import com.googlecode.n_orm.storeapi.MetaInformation;
 import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
 import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 
+import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 
@@ -22,8 +23,10 @@ public class Store
 		com.googlecode.n_orm.storeapi.Store,
 		com.googlecode.n_orm.storeapi.GenericStore
 {
-	private int port = 0;
+	private int    port = 0;
 	private String host = null;
+
+	private static String DB_NAME = "n_orm";
 
 	private MongoClient mongoClient;
 
@@ -49,10 +52,14 @@ public class Store
 				? new MongoClient(host)
 				: new MongoClient(host, port);
 
+			// MongoClient won't complain that it couldn't connect to the
+			// database until the first access attempt. Force access to the DB
+			mongoClient.getDB(DB_NAME);
+
 		} catch(Exception e) {
 			Mongo.mongoLog.log(
 				Level.SEVERE,
-				"Could not connect to the mongo database "+host+":"+port
+				"Could not find "+host+":"+port
 			);
 			throw new DatabaseNotReachedException(e);
 		}
@@ -130,7 +137,7 @@ public class Store
 	{
 	}
 
-	public long count( MetaInformation meta, String table, Constraint c)
+	public long count(MetaInformation meta, String table, Constraint c)
 		throws DatabaseNotReachedException
 	{
 		return 0;
