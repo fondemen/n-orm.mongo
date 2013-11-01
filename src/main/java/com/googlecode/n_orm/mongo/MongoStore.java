@@ -8,6 +8,7 @@ import java.net.InetAddress;
 
 import com.googlecode.n_orm.DatabaseNotReachedException;
 
+import com.googlecode.n_orm.storeapi.Store;
 import com.googlecode.n_orm.storeapi.Constraint;
 import com.googlecode.n_orm.storeapi.GenericStore;
 import com.googlecode.n_orm.storeapi.MetaInformation;
@@ -18,10 +19,7 @@ import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 
-public class Store
-	implements
-		com.googlecode.n_orm.storeapi.Store,
-		com.googlecode.n_orm.storeapi.GenericStore
+public class MongoStore implements Store, GenericStore
 {
 	private int    port = 0;
 	private String host = null;

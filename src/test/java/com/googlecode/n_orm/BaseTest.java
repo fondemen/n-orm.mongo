@@ -6,25 +6,28 @@ import org.junit.After;
 import org.junit.Before;
 import static org.junit.Assert.*;
 
-import com.googlecode.n_orm.mongo.Store;
 import com.googlecode.n_orm.StoreSelector;
+import com.googlecode.n_orm.mongo.MongoStore;
 import com.googlecode.n_orm.DatabaseNotReachedException;
+
 
 public class BaseTest {
 
-	private Store mongoStore;
 	private Properties props;
+	private MongoStore mongoStore;
 
 	@Before
 	public void loadProps()
 	{
 		try {
-			props = StoreSelector.getInstance().findProperties(Store.class);
+			props = StoreSelector.getInstance().findProperties(
+				MongoStore.class
+			);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 
-		assertEquals(props.getProperty("class"), Store.class.getName());
+		assertEquals(props.getProperty("class"), MongoStore.class.getName());
 	}
 
 
@@ -32,7 +35,7 @@ public class BaseTest {
 	public void connectTest()
 		throws DatabaseNotReachedException
 	{
-		mongoStore = new Store();
+		mongoStore = new MongoStore();
 		assert props.getProperty("host") != null;
 		assert props.getProperty("port") != null;
 		mongoStore.setHost(props.getProperty("host"));
