@@ -14,7 +14,6 @@ import com.googlecode.n_orm.DatabaseNotReachedException;
 public class BaseTest {
 
 	private Properties props;
-	private MongoStore mongoStore;
 
 	@Before
 	public void loadProps()
@@ -32,14 +31,42 @@ public class BaseTest {
 
 
 	@Test
-	public void connectTest()
-		throws DatabaseNotReachedException
+	public void notStartedTest()
 	{
-		mongoStore = new MongoStore();
+		MongoStore mongoStore = new MongoStore();
+
+		try {
+			mongoStore.count(null, null, null);
+		} catch (DatabaseNotReachedException e) {
+			; // ok
+		} catch (Exception e) {
+			assert false;
+		}
+
+		try {
+			mongoStore.close();
+		} catch (DatabaseNotReachedException e) {
+			; // ok
+		} catch (Exception e) {
+			assert false;
+		}
+	}
+
+
+	@Test
+	public void connectTest()
+	{
+		MongoStore mongoStore = new MongoStore();
+
+		assert props.getProperty("db")   != null;
 		assert props.getProperty("host") != null;
 		assert props.getProperty("port") != null;
+
+		mongoStore.setDB(props.getProperty("db"));
 		mongoStore.setHost(props.getProperty("host"));
 		mongoStore.setPort(Integer.parseInt(props.getProperty("port")));
+
 		mongoStore.start();
+		mongoStore.close();
 	}
 }

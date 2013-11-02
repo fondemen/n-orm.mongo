@@ -22,40 +22,44 @@ import com.mongodb.MongoException;
 
 /* Implementation notes:
  *
- * A Table ~~ A Collection                        ~~ A storable class
- * A Row   ~~ A first level entry in a collection
+ * A Table ~~ A Collection               ~~ A @persisting class
+ * A Row   ~~ A Document (1st lvl entry)
 **/
 
 public class MongoStore implements Store, GenericStore
 {
-	private int    port = 0;
-	private String host = null;
-
 	private static String DB_NAME    = "n_orm";
 	private static short  MONGO_PORT =  27017;
 	private static String MONGO_HOST = "localhost";
 
+	private static String hostname;
+
+	static {
+		try {
+			hostname = InetAddress.getLocalHost().getHostAddress();
+		} catch (Exception e) {
+			Mongo.mongoLog.log(
+				Level.WARNING,
+				"Could not get local addr. \"localhost\" will be used."
+			);
+			hostname = MONGO_HOST;
+		}
+	}
+
 	private DB mongoDB;
 	private MongoClient mongoClient;
+
+	private int    port = MONGO_PORT;
+	private String host = hostname;
+	private String db   = DB_NAME;
+
+	private boolean started = false;
 
 
 	public void start()
 		throws DatabaseNotReachedException
 	{
-		if (host == null) {
-			try {
-				host = InetAddress.getLocalHost().getHostAddress();
-			} catch (Exception e) {
-				Mongo.mongoLog.log(
-					Level.WARNING,
-					"Could not get local addr. \"localhost\" will be used.");
-				host = MONGO_HOST;
-			}
-		}
-
-		if (port == 0) {
-			port = MONGO_PORT;
-		}
+		if (started) return;
 
 		try {
 			Mongo.mongoLog.log(
@@ -73,7 +77,7 @@ public class MongoStore implements Store, GenericStore
 		}
 
 		try {
-			mongoDB = mongoClient.getDB(DB_NAME);
+			mongoDB = mongoClient.getDB(db);
 			// Mongo won't complain that it couldn't connect to the database
 			// until the first access attempt. Force access to the DB.
 			mongoDB.getCollectionNames();
@@ -85,12 +89,18 @@ public class MongoStore implements Store, GenericStore
 			);
 			throw new DatabaseNotReachedException(e);
 		}
+
+		started = true;
 	}
 
 	public boolean hasTable(String tableName)
 		throws DatabaseNotReachedException
 	{
 		boolean ret;
+
+		if (!started) {
+			throw new DatabaseNotReachedException("");
+		}
 
 		try {
 			ret = mongoDB.collectionExists(tableName);
@@ -104,11 +114,17 @@ public class MongoStore implements Store, GenericStore
 	public void delete(MetaInformation meta, String table, String id)
 		throws DatabaseNotReachedException
 	{
+		if (!started) {
+			throw new DatabaseNotReachedException("");
+		}
 	}
 
 	public boolean exists(MetaInformation meta, String table, String row)
 		throws DatabaseNotReachedException
 	{
+		if (!started) {
+			throw new DatabaseNotReachedException("");
+		}
 		return false;
 	}
 
@@ -117,6 +133,9 @@ public class MongoStore implements Store, GenericStore
 		String family
 	) throws DatabaseNotReachedException
 	{
+		if (!started) {
+			throw new DatabaseNotReachedException("");
+		}
 		return false;
 	}
 
@@ -126,6 +145,9 @@ public class MongoStore implements Store, GenericStore
 		Constraint c, int limit, Set<String> families
 	) throws DatabaseNotReachedException
 	{
+		if (!started) {
+			throw new DatabaseNotReachedException("");
+		}
 		return null;
 	}
 
@@ -134,6 +156,9 @@ public class MongoStore implements Store, GenericStore
 			String family, String key
 	) throws DatabaseNotReachedException
 	{
+		if (!started) {
+			throw new DatabaseNotReachedException("");
+		}
 		return null;
 	}
 
@@ -141,6 +166,9 @@ public class MongoStore implements Store, GenericStore
 		MetaInformation meta, String table, String id, String family
 	) throws DatabaseNotReachedException
 	{
+		if (!started) {
+			throw new DatabaseNotReachedException("");
+		}
 		return null;
 	}
 
@@ -149,6 +177,9 @@ public class MongoStore implements Store, GenericStore
 		String id, String family, Constraint c
 	) throws DatabaseNotReachedException
 	{
+		if (!started) {
+			throw new DatabaseNotReachedException("");
+		}
 		return null;
 	}
 
@@ -156,6 +187,9 @@ public class MongoStore implements Store, GenericStore
 		MetaInformation meta, String table, String id, Set<String> families
 	) throws DatabaseNotReachedException
 	{
+		if (!started) {
+			throw new DatabaseNotReachedException("");
+		}
 		return null;
 	}
 
@@ -165,21 +199,57 @@ public class MongoStore implements Store, GenericStore
 		Map<String, Map<String, Number>> increments
 	) throws DatabaseNotReachedException
 	{
+		if (!started) {
+			throw new DatabaseNotReachedException("");
+		}
 	}
 
 	public long count(MetaInformation meta, String table, Constraint c)
 		throws DatabaseNotReachedException
 	{
+		if (!started) {
+			throw new DatabaseNotReachedException("");
+		}
 		return 0;
 	}
 
 	public void setHost(String host)
 	{
+		if (started) return;
 		this.host = host;
 	}
 
 	public void setPort(int port)
 	{
+		if (started) return;
 		this.port = port;
+	}
+
+	public void setDB(String dbname)
+	{
+		this.db = dbname;
+
+		if (started) {
+			mongoDB = mongoClient.getDB(db);
+		}
+	}
+
+	public void close()
+		throws DatabaseNotReachedException
+	{
+		if (!started) {
+			throw new DatabaseNotReachedException("");
+		}
+
+		// TODO: save changes before closing
+
+		// close connections
+		mongoClient.close();
+
+		// reset default values
+		started = false;
+		db      = DB_NAME;
+		port    = MONGO_PORT;
+		host    = hostname;
 	}
 }
