@@ -226,7 +226,8 @@ public class MongoStore implements Store, GenericStore
 
 	public void storeChanges(
 		MetaInformation meta, String table, String id,
-		ColumnFamilyData changed, Map<String, Set<String>> removed,
+		ColumnFamilyData changed,
+		Map<String, Set<String>> removed,
 		Map<String, Map<String, Number>> increments
 	) throws DatabaseNotReachedException
 	{
@@ -242,6 +243,19 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 		return 0;
+	}
+
+	public void dropTable(String table)
+	{
+		if (!started) {
+			throw new DatabaseNotReachedException("Store not started");
+		}
+
+		try {
+			mongoDB.getCollection(table).drop();
+		} catch (Exception e) {
+			throw new DatabaseNotReachedException(e);
+		}
 	}
 
 	public void setHost(String host)
