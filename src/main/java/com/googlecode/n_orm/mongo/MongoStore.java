@@ -143,6 +143,47 @@ public class MongoStore implements Store, GenericStore
 		if (!started) {
 			throw new DatabaseNotReachedException("Store not started");
 		}
+
+		DBObject o = findObject(table, id);
+		
+		if (o != null) {
+			try {
+				// TODO: handle return value of the following operation
+				mongoDB.getCollection(table).remove(o);
+			} catch (Exception e) {
+				throw new DatabaseNotReachedException(e);
+			}
+		}
+	}
+
+	public void insert(
+			MetaInformation meta, String table, String row, ColumnFamilyData data
+	) throws DatabaseNotReachedException
+	{
+		if (!started) {
+			throw new DatabaseNotReachedException("Store not started");
+		}
+		
+
+		DBObject familyObj = new BasicDBObject();
+		for (Map.Entry<String, Map<String, byte[]>> family : data.entrySet()) {
+
+			DBObject columnObj = new BasicDBObject();
+			for (Map.Entry<String, byte[]> column : family.getValue().entrySet()) {
+				columnObj.put(column.getKey(), column.getValue());
+			}
+
+			familyObj.put(family.getKey(), columnObj);
+		}
+
+		DBObject rowObj = new BasicDBObject();
+		rowObj.put(ROW_ENTRY_NAME, row);
+		rowObj.put(FAM_ENTRY_NAME, familyObj);
+
+		DBObject query = new BasicDBObject(ROW_ENTRY_NAME, row);
+		DBCollection col = mongoDB.getCollection(table);
+
+		col.update(query, rowObj, true, false);
 	}
 
 	public boolean exists(MetaInformation meta, String table, String row)
