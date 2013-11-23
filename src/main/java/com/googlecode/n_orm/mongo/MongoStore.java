@@ -99,7 +99,7 @@ public class MongoStore implements Store, GenericStore
 		boolean ret;
 
 		if (!started) {
-			throw new DatabaseNotReachedException("");
+			throw new DatabaseNotReachedException("Store not started");
 		}
 
 		try {
@@ -115,7 +115,7 @@ public class MongoStore implements Store, GenericStore
 		throws DatabaseNotReachedException
 	{
 		if (!started) {
-			throw new DatabaseNotReachedException("");
+			throw new DatabaseNotReachedException("Store not started");
 		}
 	}
 
@@ -123,18 +123,17 @@ public class MongoStore implements Store, GenericStore
 		throws DatabaseNotReachedException
 	{
 		if (!started) {
-			throw new DatabaseNotReachedException("");
+			throw new DatabaseNotReachedException("Store not started");
 		}
 		return false;
 	}
 
 	public boolean exists(
-		MetaInformation meta, String table, String row,
-		String family
+		MetaInformation meta, String table, String row, String family
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
-			throw new DatabaseNotReachedException("");
+			throw new DatabaseNotReachedException("Store not started");
 		}
 		return false;
 	}
@@ -146,7 +145,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
-			throw new DatabaseNotReachedException("");
+			throw new DatabaseNotReachedException("Store not started");
 		}
 		return null;
 	}
@@ -157,7 +156,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
-			throw new DatabaseNotReachedException("");
+			throw new DatabaseNotReachedException("Store not started");
 		}
 		return null;
 	}
@@ -167,7 +166,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
-			throw new DatabaseNotReachedException("");
+			throw new DatabaseNotReachedException("Store not started");
 		}
 		return null;
 	}
@@ -178,7 +177,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
-			throw new DatabaseNotReachedException("");
+			throw new DatabaseNotReachedException("Store not started");
 		}
 		return null;
 	}
@@ -188,7 +187,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
-			throw new DatabaseNotReachedException("");
+			throw new DatabaseNotReachedException("Store not started");
 		}
 		return null;
 	}
@@ -200,7 +199,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
-			throw new DatabaseNotReachedException("");
+			throw new DatabaseNotReachedException("Store not started");
 		}
 	}
 
@@ -208,7 +207,7 @@ public class MongoStore implements Store, GenericStore
 		throws DatabaseNotReachedException
 	{
 		if (!started) {
-			throw new DatabaseNotReachedException("");
+			throw new DatabaseNotReachedException("Store not started");
 		}
 		return 0;
 	}
@@ -238,7 +237,7 @@ public class MongoStore implements Store, GenericStore
 		throws DatabaseNotReachedException
 	{
 		if (!started) {
-			throw new DatabaseNotReachedException("");
+			throw new DatabaseNotReachedException("Store not started");
 		}
 
 		// TODO: save changes before closing

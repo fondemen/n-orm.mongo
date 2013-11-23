@@ -1,3 +1,5 @@
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Properties;
 import java.io.IOException;
 
@@ -10,25 +12,26 @@ import com.googlecode.n_orm.StoreSelector;
 import com.googlecode.n_orm.mongo.MongoStore;
 import com.googlecode.n_orm.DatabaseNotReachedException;
 
+import com.googlecode.n_orm.storeapi.MetaInformation;
+import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
+import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
 
-public class BaseTest {
 
-	private Properties props;
+public class BaseTest
+{
+	private static String DBNAME     = "n_orm_test";
+	private static String COLLECTION = "defaultcol";
 
 	@Before
-	public void loadProps()
+	public void prepareTests()
 	{
-		try {
-			props = StoreSelector.getInstance().findProperties(
-				MongoStore.class
-			);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		MongoStore mongoStore = new MongoStore();
 
-		assertEquals(props.getProperty("class"), MongoStore.class.getName());
+		mongoStore.setDB(DBNAME);
+		mongoStore.start();
+		mongoStore.dropTable(COLLECTION);
+		mongoStore.close();
 	}
-
 
 	@Test
 	public void notStartedTest()
@@ -52,21 +55,29 @@ public class BaseTest {
 		}
 	}
 
-
 	@Test
-	public void connectTest()
+	public void addAndDeleteTest()
 	{
 		MongoStore mongoStore = new MongoStore();
-
-		assert props.getProperty("db")   != null;
-		assert props.getProperty("host") != null;
-		assert props.getProperty("port") != null;
-
-		mongoStore.setDB(props.getProperty("db"));
-		mongoStore.setHost(props.getProperty("host"));
-		mongoStore.setPort(Integer.parseInt(props.getProperty("port")));
+		mongoStore.setDB(DBNAME);
 
 		mongoStore.start();
+		ColumnFamilyData data = new DefaultColumnFamilyData();
+		
+		HashMap<String, byte[]> col1 = new HashMap<String, byte[]>();
+		HashMap<String, byte[]> col2 = new HashMap<String, byte[]>();
+
+		col1.put("toto", new String("haha").getBytes());
+		col1.put("tutu", new String("bebe").getBytes());
+
+		col2.put("machin", new String("truc").getBytes());
+		col2.put("bidule", new String("chouette").getBytes());
+
+		data.put("1", col1);
+		data.put("2", col2);
+
+		mongoStore.insert(null, COLLECTION, "truc", data);
+		//mongoStore.delete(null, COLLECTION, "truc");
 		mongoStore.close();
 	}
 }
