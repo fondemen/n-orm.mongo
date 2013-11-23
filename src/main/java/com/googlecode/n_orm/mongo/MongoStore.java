@@ -16,6 +16,9 @@ import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
 import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 
 import com.mongodb.DB;
+import com.mongodb.DBObject;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 
@@ -31,6 +34,9 @@ public class MongoStore implements Store, GenericStore
 	private static String DB_NAME    = "n_orm";
 	private static short  MONGO_PORT =  27017;
 	private static String MONGO_HOST = "localhost";
+
+	private static String ROW_ENTRY_NAME = "rowname";
+	private static String FAM_ENTRY_NAME = "families";
 
 	private static String hostname;
 
@@ -111,6 +117,26 @@ public class MongoStore implements Store, GenericStore
 		return ret;
 	}
 
+	private DBObject findObject(String table, String row)
+		throws DatabaseNotReachedException
+	{
+		if (!hasTable(table)) {
+			return null;
+		}
+
+		DBObject o;
+
+		try {
+			o = mongoDB.getCollection(table).findOne(
+				new BasicDBObject(ROW_ENTRY_NAME, row)
+			);
+		} catch (Exception e) {
+			throw new DatabaseNotReachedException(e);
+		}
+
+		return o;
+	}
+
 	public void delete(MetaInformation meta, String table, String id)
 		throws DatabaseNotReachedException
 	{
@@ -125,7 +151,8 @@ public class MongoStore implements Store, GenericStore
 		if (!started) {
 			throw new DatabaseNotReachedException("Store not started");
 		}
-		return false;
+
+		return (findObject(table, row) == null) ? false : true;
 	}
 
 	public boolean exists(
@@ -135,7 +162,12 @@ public class MongoStore implements Store, GenericStore
 		if (!started) {
 			throw new DatabaseNotReachedException("Store not started");
 		}
-		return false;
+
+		DBObject o = findObject(table, row);
+
+		return (o == null)
+			? false
+			: o.containsField(family);
 	}
 
 
