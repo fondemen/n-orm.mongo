@@ -41,6 +41,7 @@ public class MongoStore implements Store, GenericStore
 	private static String hostname;
 
 	static {
+		/* FIXME: getHostAddress returns wrong IP address...
 		try {
 			hostname = InetAddress.getLocalHost().getHostAddress();
 		} catch (Exception e) {
@@ -50,6 +51,7 @@ public class MongoStore implements Store, GenericStore
 			);
 			hostname = MONGO_HOST;
 		}
+		*/
 	}
 
 	private DB mongoDB;
