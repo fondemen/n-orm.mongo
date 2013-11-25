@@ -250,11 +250,34 @@ public class MongoStore implements Store, GenericStore
 		MetaInformation meta, String table, String id, String family
 	) throws DatabaseNotReachedException
 	{
+		Map<String, byte[]> map = new HashMap();
+
 		if (!started) {
 			Mongo.mongoLog.log(Level.WARNING, "Malformed row");
 			throw new DatabaseNotReachedException("Store not started");
 		}
-		return null;
+
+		DBObject o = findRow(table, id);
+
+		if (o == null) {
+			return map;
+		}
+
+		DBObject f = (DBObject) o.get(FAM_ENTRY_NAME);
+		
+		if (f == null) {
+			Mongo.mongoLog.log(Level.SEVERE, "Malformed row");
+			throw new DatabaseNotReachedException("Malformed row");
+		}
+
+		if (f.containsKey(family)) {
+			DBObject c = (DBObject) f.get(family);
+			for (String key : c.keySet()) {
+				map.put(key, (byte[])(c.get(key)));
+			}
+		}
+
+		return map;
 	}
 
 	public Map<String, byte[]> get(

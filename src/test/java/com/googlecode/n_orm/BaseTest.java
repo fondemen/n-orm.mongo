@@ -1,7 +1,7 @@
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Properties;
-import java.io.IOException;
+import java.util.Arrays;
 
 import org.junit.Test;
 import org.junit.After;
@@ -56,28 +56,42 @@ public class BaseTest
 	}
 
 	@Test
-	public void addAndDeleteTest()
+	public void addAndRetrieve()
 	{
 		MongoStore mongoStore = new MongoStore();
 		mongoStore.setDB(DBNAME);
 
 		mongoStore.start();
 		ColumnFamilyData data = new DefaultColumnFamilyData();
-		
-		HashMap<String, byte[]> col1 = new HashMap<String, byte[]>();
-		HashMap<String, byte[]> col2 = new HashMap<String, byte[]>();
 
-		col1.put("toto", new String("haha").getBytes());
-		col1.put("tutu", new String("bebe").getBytes());
+		Map<String, byte[]> col_ret;
+		Map<String, byte[]> col1 = new HashMap<String, byte[]>();
+		Map<String, byte[]> col2 = new HashMap<String, byte[]>();
 
-		col2.put("machin", new String("truc").getBytes());
-		col2.put("bidule", new String("chouette").getBytes());
+		col1.put("toto", (new String("haha")).getBytes());
+		col1.put("tutu", (new String("bebe")).getBytes());
+
+		col2.put("machin", (new String("truc"    )).getBytes());
+		col2.put("bidule", (new String("chouette")).getBytes());
 
 		data.put("1", col1);
 		data.put("2", col2);
 
 		mongoStore.insert(null, COLLECTION, "truc", data);
-		//mongoStore.delete(null, COLLECTION, "truc");
+		
+		col_ret = mongoStore.get(null, COLLECTION, "truc", "1");
+		assertEquals(col_ret.size(), col1.size());
+		for (String key : col_ret.keySet()) {
+			assertArrayEquals(col_ret.get(key), col1.get(key));
+		}
+
+		col_ret = mongoStore.get(null, COLLECTION, "truc", "2");
+		assertEquals(col_ret.size(), col2.size());
+		for (String key : col_ret.keySet()) {
+			assertArrayEquals(col_ret.get(key), col2.get(key));
+		}
+
+		mongoStore.delete(null, COLLECTION, "truc");
 		mongoStore.close();
 	}
 }
