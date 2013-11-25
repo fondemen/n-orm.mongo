@@ -2,6 +2,7 @@ package com.googlecode.n_orm.mongo;
 
 import java.util.Set;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.net.InetAddress;
@@ -208,9 +209,18 @@ public class MongoStore implements Store, GenericStore
 
 		DBObject o = findRow(table, row);
 
-		return (o == null)
-			? false
-			: o.containsField(family);
+		if (o == null) {
+			return false;
+		}
+
+		DBObject f = (DBObject) o.get(FAM_ENTRY_NAME);
+
+		if (f == null) {
+			Mongo.mongoLog.log(Level.SEVERE, "Malformed row");
+			throw new DatabaseNotReachedException("Malformed row");
+		}
+
+		return f.containsField(family);
 	}
 
 
@@ -241,6 +251,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
+			Mongo.mongoLog.log(Level.WARNING, "Malformed row");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 		return null;
