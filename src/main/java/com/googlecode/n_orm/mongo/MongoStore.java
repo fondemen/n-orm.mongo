@@ -119,7 +119,7 @@ public class MongoStore implements Store, GenericStore
 		return ret;
 	}
 
-	private DBObject findObject(String table, String row)
+	protected DBObject findRow(String table, String row)
 		throws DatabaseNotReachedException
 	{
 		if (!hasTable(table)) {
@@ -146,7 +146,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-		DBObject o = findObject(table, id);
+		DBObject o = findRow(table, id);
 		
 		if (o != null) {
 			try {
@@ -195,7 +195,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-		return (findObject(table, row) == null) ? false : true;
+		return (findRow(table, row) == null) ? false : true;
 	}
 
 	public boolean exists(
@@ -206,7 +206,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-		DBObject o = findObject(table, row);
+		DBObject o = findRow(table, row);
 
 		return (o == null)
 			? false
