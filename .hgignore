@@ -1,1 +1,6 @@
 target/
+
+syntax: glob
+*~
+*.swp
+*.swo
