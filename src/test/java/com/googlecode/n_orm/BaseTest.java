@@ -56,6 +56,40 @@ public class BaseTest
 	}
 
 	@Test
+	public void collectionTest()
+	{
+		String TEST_ROW = "my_super_test_row";
+		String TEST_FAMILY = "my_super_test_family";
+		String TEST_COLLECTION = "my_super_test_collection";
+
+		MongoStore mongoStore = new MongoStore();
+		mongoStore.setDB(DBNAME);
+
+		ColumnFamilyData data = new DefaultColumnFamilyData();
+		Map<String, byte[]> col = new HashMap<String, byte[]>();
+
+		col.put("toto", (new String("haha")).getBytes());
+		col.put("tutu", (new String("bebe")).getBytes());
+		data.put(TEST_FAMILY, col);
+
+		mongoStore.start();
+
+		// add a collection by inserting something in it
+		mongoStore.insert(null, TEST_COLLECTION, TEST_ROW, data);
+
+		// test for the existance of the inserted elements
+		assertTrue(mongoStore.hasTable(TEST_COLLECTION));
+		assertTrue(mongoStore.exists(null, TEST_COLLECTION, TEST_ROW));
+		assertTrue(mongoStore.exists(null, TEST_COLLECTION, TEST_ROW, TEST_FAMILY));
+
+		// remove the table
+		mongoStore.dropTable(TEST_COLLECTION);
+		assertFalse(mongoStore.hasTable(TEST_COLLECTION));
+
+		mongoStore.close();
+	}
+
+	@Test
 	public void addAndRetrieve()
 	{
 		MongoStore mongoStore = new MongoStore();
