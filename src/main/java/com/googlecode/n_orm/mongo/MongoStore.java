@@ -3,6 +3,7 @@ package com.googlecode.n_orm.mongo;
 import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.net.InetAddress;
@@ -14,6 +15,7 @@ import com.googlecode.n_orm.storeapi.Constraint;
 import com.googlecode.n_orm.storeapi.GenericStore;
 import com.googlecode.n_orm.storeapi.MetaInformation;
 import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
+import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
 import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 
 import com.mongodb.DB;
@@ -323,10 +325,35 @@ public class MongoStore implements Store, GenericStore
 		MetaInformation meta, String table, String id, Set<String> families
 	) throws DatabaseNotReachedException
 	{
+		TreeMap<String, Map<String, byte[]>> mapOfMaps
+			= new TreeMap<String, Map<String, byte[]>>();
+
 		if (!started) {
 			throw new DatabaseNotReachedException("Store not started");
 		}
-		return null;
+
+		DBObject fam, columns;
+
+		try {
+			fam = getFamilies(findRow(table, id));
+
+			for (String family : families) {
+				Map map = new HashMap();
+				columns = getColumns(fam, family);
+
+				for (String key : columns.keySet()) {
+					map.put(key, (byte[])(columns.get(key)));
+				}
+
+				mapOfMaps.put(family, map);
+			}
+		} catch (DatabaseNotReachedException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new DatabaseNotReachedException("Malformed row");
+		}
+
+		return new DefaultColumnFamilyData(mapOfMaps);
 	}
 
 	public void storeChanges(
