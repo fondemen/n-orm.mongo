@@ -140,6 +140,21 @@ public class MongoStore implements Store, GenericStore
 		return o;
 	}
 
+
+	protected DBObject getFamilies(DBObject row)
+		throws DatabaseNotReachedException
+	{
+		return (DBObject) row.get(FAM_ENTRY_NAME);
+	}
+
+	
+	protected DBObject getColumns(DBObject families, String familyName)
+		throws DatabaseNotReachedException
+	{
+		return (DBObject) families.get(familyName);
+	}
+
+
 	public void delete(MetaInformation meta, String table, String id)
 		throws DatabaseNotReachedException
 	{
@@ -166,7 +181,6 @@ public class MongoStore implements Store, GenericStore
 		if (!started) {
 			throw new DatabaseNotReachedException("Store not started");
 		}
-		
 
 		DBObject familyObj = new BasicDBObject();
 		for (Map.Entry<String, Map<String, byte[]>> family : data.entrySet()) {
@@ -235,6 +249,7 @@ public class MongoStore implements Store, GenericStore
 		return null;
 	}
 
+
 	public byte[] get(
 			MetaInformation meta, String table, String row,
 			String family, String key
@@ -246,6 +261,7 @@ public class MongoStore implements Store, GenericStore
 		return null;
 	}
 
+
 	public Map<String, byte[]> get(
 		MetaInformation meta, String table, String id, String family
 	) throws DatabaseNotReachedException
@@ -256,25 +272,22 @@ public class MongoStore implements Store, GenericStore
 			Mongo.mongoLog.log(Level.WARNING, "Malformed row");
 			throw new DatabaseNotReachedException("Store not started");
 		}
-
-		DBObject o = findRow(table, id);
-
-		if (o == null) {
-			return map;
-		}
-
-		DBObject f = (DBObject) o.get(FAM_ENTRY_NAME);
 		
-		if (f == null) {
-			Mongo.mongoLog.log(Level.SEVERE, "Malformed row");
+		DBObject columns;
+
+		try {
+			columns = getColumns(
+				getFamilies(findRow(table, id)),
+				family
+			);
+		} catch (DatabaseNotReachedException e) {
+			throw e;
+		} catch (Exception e) {
 			throw new DatabaseNotReachedException("Malformed row");
 		}
 
-		if (f.containsKey(family)) {
-			DBObject c = (DBObject) f.get(family);
-			for (String key : c.keySet()) {
-				map.put(key, (byte[])(c.get(key)));
-			}
+		for (String key : columns.keySet()) {
+			map.put(key, (byte[])(columns.get(key)));
 		}
 
 		return map;
