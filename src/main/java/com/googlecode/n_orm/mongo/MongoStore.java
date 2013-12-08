@@ -256,6 +256,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
+			Mongo.mongoLog.log(Level.WARNING, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
@@ -283,7 +284,7 @@ public class MongoStore implements Store, GenericStore
 		Map<String, byte[]> map = new HashMap();
 
 		if (!started) {
-			Mongo.mongoLog.log(Level.WARNING, "Malformed row");
+			Mongo.mongoLog.log(Level.WARNING, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 		
