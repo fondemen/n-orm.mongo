@@ -258,7 +258,21 @@ public class MongoStore implements Store, GenericStore
 		if (!started) {
 			throw new DatabaseNotReachedException("Store not started");
 		}
-		return null;
+
+		DBObject columns;
+
+		try {
+			columns = getColumns(
+				getFamilies(findRow(table, row)),
+				family
+			);
+		} catch (DatabaseNotReachedException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new DatabaseNotReachedException("Malformed row");
+		}
+
+		return (byte[])(columns.get(key));
 	}
 
 

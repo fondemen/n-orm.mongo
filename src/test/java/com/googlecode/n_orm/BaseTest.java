@@ -125,6 +125,20 @@ public class BaseTest
 			assertArrayEquals(col_ret.get(key), col2.get(key));
 		}
 
+		for (String key : col1.keySet()) {
+			assertArrayEquals(
+				col1.get(key),
+				mongoStore.get(null, COLLECTION, "truc", "1", key)
+			);
+		}
+
+		for (String key : col2.keySet()) {
+			assertArrayEquals(
+				col2.get(key),
+				mongoStore.get(null, COLLECTION, "truc", "2", key)
+			);
+		}
+
 		mongoStore.delete(null, COLLECTION, "truc");
 		mongoStore.close();
 	}
