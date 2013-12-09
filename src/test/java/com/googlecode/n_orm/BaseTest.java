@@ -113,6 +113,7 @@ public class BaseTest
 
 		mongoStore.insert(null, COLLECTION, "truc", data);
 		
+		// test columns retrieval
 		col_ret = mongoStore.get(null, COLLECTION, "truc", "1");
 		assertEquals(col_ret.size(), col1.size());
 		for (String key : col_ret.keySet()) {
@@ -125,6 +126,7 @@ public class BaseTest
 			assertArrayEquals(col_ret.get(key), col2.get(key));
 		}
 
+		// test individual entries retrieval
 		for (String key : col1.keySet()) {
 			assertArrayEquals(
 				col1.get(key),
