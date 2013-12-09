@@ -20,6 +20,7 @@ import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 
 import com.mongodb.DB;
 import com.mongodb.DBObject;
+import com.mongodb.DBCursor;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
@@ -409,7 +410,34 @@ public class MongoStore implements Store, GenericStore
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
-		return 0;
+
+		long cnt = 0;
+		DBObject columns, families;
+
+		try {
+			DBCursor cursor = mongoDB.getCollection(table).find();
+
+			for (DBObject row : cursor.toArray()) {
+				families = getFamilies(row);
+
+				for (String fam : families.keySet()) {
+					columns = getColumns(families, fam);
+
+					for (String key : columns.keySet()) {
+						if (c.sastisfies(key)) {
+							cnt++;
+						}
+					}
+				}
+			}
+
+		} catch (DatabaseNotReachedException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new DatabaseNotReachedException("Malformed row");
+		}
+
+		return cnt;
 	}
 
 	public void dropTable(String table)
