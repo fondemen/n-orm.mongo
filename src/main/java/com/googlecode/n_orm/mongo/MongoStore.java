@@ -208,6 +208,7 @@ public class MongoStore implements Store, GenericStore
 		col.update(query, rowObj, true, false);
 	}
 
+
 	public boolean exists(MetaInformation meta, String table, String row)
 		throws DatabaseNotReachedException
 	{
@@ -219,6 +220,7 @@ public class MongoStore implements Store, GenericStore
 		return (findRow(table, row) == null) ? false : true;
 	}
 
+
 	public boolean exists(
 		MetaInformation meta, String table, String row, String family
 	) throws DatabaseNotReachedException
@@ -228,20 +230,17 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-		DBObject o = findRow(table, row);
+		DBObject families;
 
-		if (o == null) {
-			return false;
-		}
-
-		DBObject f = (DBObject) o.get(FAM_ENTRY_NAME);
-
-		if (f == null) {
-			Mongo.mongoLog.log(Level.SEVERE, "Malformed row");
+		try {
+			families = getFamilies(findRow(table, row));
+		} catch (DatabaseNotReachedException e) {
+			throw e;
+		} catch (Exception e) {
 			throw new DatabaseNotReachedException("Malformed row");
 		}
 
-		return f.containsField(family);
+		return families.containsField(family);
 	}
 
 
@@ -254,6 +253,7 @@ public class MongoStore implements Store, GenericStore
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
+
 		return null;
 	}
 
@@ -303,14 +303,15 @@ public class MongoStore implements Store, GenericStore
 				getFamilies(findRow(table, id)),
 				family
 			);
+
+			for (String key : columns.keySet()) {
+				map.put(key, (byte[])(columns.get(key)));
+			}
+
 		} catch (DatabaseNotReachedException e) {
 			throw e;
 		} catch (Exception e) {
 			throw new DatabaseNotReachedException("Malformed row");
-		}
-
-		for (String key : columns.keySet()) {
-			map.put(key, (byte[])(columns.get(key)));
 		}
 
 		return map;
@@ -364,6 +365,7 @@ public class MongoStore implements Store, GenericStore
 		return new DefaultColumnFamilyData(mapOfMaps);
 	}
 
+
 	public void storeChanges(
 		MetaInformation meta, String table, String id,
 		ColumnFamilyData changed,
@@ -376,6 +378,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 	}
+
 
 	public long count(MetaInformation meta, String table, Constraint c)
 		throws DatabaseNotReachedException
