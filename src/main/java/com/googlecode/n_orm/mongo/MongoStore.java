@@ -326,7 +326,29 @@ public class MongoStore implements Store, GenericStore
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
-		return null;
+
+		DBObject columns;
+		Map<String, byte[]> map = new HashMap();
+
+		try {
+			columns = getColumns(
+				getFamilies(findRow(table, id)),
+				family
+			);
+
+			for (String key : columns.keySet()) {
+				if (c.sastisfies(key)) {
+					map.put(key, (byte[])(columns.get(key)));
+				}
+			}
+
+		} catch (DatabaseNotReachedException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new DatabaseNotReachedException("Malformed row");
+		}
+
+		return map;
 	}
 
 	public ColumnFamilyData get(
