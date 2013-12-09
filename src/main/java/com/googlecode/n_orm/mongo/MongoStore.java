@@ -110,6 +110,7 @@ public class MongoStore implements Store, GenericStore
 		boolean ret;
 
 		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
@@ -161,6 +162,7 @@ public class MongoStore implements Store, GenericStore
 		throws DatabaseNotReachedException
 	{
 		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
@@ -181,6 +183,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
@@ -209,6 +212,7 @@ public class MongoStore implements Store, GenericStore
 		throws DatabaseNotReachedException
 	{
 		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
@@ -220,6 +224,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
@@ -246,6 +251,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 		return null;
@@ -258,7 +264,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
-			Mongo.mongoLog.log(Level.WARNING, "Store not started");
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
@@ -286,7 +292,7 @@ public class MongoStore implements Store, GenericStore
 		Map<String, byte[]> map = new HashMap();
 
 		if (!started) {
-			Mongo.mongoLog.log(Level.WARNING, "Store not started");
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 		
@@ -316,6 +322,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 		return null;
@@ -329,6 +336,7 @@ public class MongoStore implements Store, GenericStore
 			= new TreeMap<String, Map<String, byte[]>>();
 
 		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
@@ -364,6 +372,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException
 	{
 		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 	}
@@ -372,6 +381,7 @@ public class MongoStore implements Store, GenericStore
 		throws DatabaseNotReachedException
 	{
 		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 		return 0;
@@ -380,6 +390,7 @@ public class MongoStore implements Store, GenericStore
 	public void dropTable(String table)
 	{
 		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
@@ -415,6 +426,7 @@ public class MongoStore implements Store, GenericStore
 		throws DatabaseNotReachedException
 	{
 		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
