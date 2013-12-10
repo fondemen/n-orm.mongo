@@ -229,16 +229,18 @@ public class MongoStore implements Store, GenericStore
 		}
 
 		DBObject families;
+		boolean ret = false;
 
 		try {
 			families = getFamilies(findRow(table, row));
+			ret = !families.keySet().isEmpty();
 		} catch (DatabaseNotReachedException e) {
 			throw e;
 		} catch (Exception e) {
 			throw new DatabaseNotReachedException("Malformed row");
 		}
 
-		return families.containsField(family);
+		return ret;
 	}
 
 
