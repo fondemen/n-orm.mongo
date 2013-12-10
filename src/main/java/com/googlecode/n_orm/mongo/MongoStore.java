@@ -39,9 +39,6 @@ public class MongoStore implements Store, GenericStore
 	private static short  MONGO_PORT =  27017;
 	private static String MONGO_HOST = "localhost";
 
-	private static String ROW_ENTRY_NAME = "rowname";
-	private static String FAM_ENTRY_NAME = "families";
-
 	private static String hostname;
 
 	static {
@@ -135,7 +132,7 @@ public class MongoStore implements Store, GenericStore
 
 		try {
 			o = mongoDB.getCollection(table).findOne(
-				new BasicDBObject(ROW_ENTRY_NAME, row)
+				new BasicDBObject(MongoRow.ROW_ENTRY_NAME, row)
 			);
 		} catch (Exception e) {
 			throw new DatabaseNotReachedException(e);
@@ -148,7 +145,7 @@ public class MongoStore implements Store, GenericStore
 	protected DBObject getFamilies(DBObject row)
 		throws DatabaseNotReachedException
 	{
-		return (DBObject) row.get(FAM_ENTRY_NAME);
+		return (DBObject) row.get(MongoRow.FAM_ENTRY_NAME);
 	}
 
 	
@@ -200,10 +197,10 @@ public class MongoStore implements Store, GenericStore
 		}
 
 		DBObject rowObj = new BasicDBObject();
-		rowObj.put(ROW_ENTRY_NAME, row);
-		rowObj.put(FAM_ENTRY_NAME, familyObj);
+		rowObj.put(MongoRow.ROW_ENTRY_NAME, row);
+		rowObj.put(MongoRow.FAM_ENTRY_NAME, familyObj);
 
-		DBObject query = new BasicDBObject(ROW_ENTRY_NAME, row);
+		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, row);
 		DBCollection col = mongoDB.getCollection(table);
 
 		col.update(query, rowObj, true, false);
