@@ -82,6 +82,10 @@ public class BaseTest
 		assertTrue(mongoStore.exists(null, TEST_COLLECTION, TEST_ROW));
 		assertTrue(mongoStore.exists(null, TEST_COLLECTION, TEST_ROW, TEST_FAMILY));
 
+		// remove an element
+		mongoStore.delete(null, TEST_COLLECTION, TEST_ROW);
+		assertFalse(mongoStore.exists(null, TEST_COLLECTION, TEST_ROW));
+
 		// remove the table
 		mongoStore.dropTable(TEST_COLLECTION);
 		assertFalse(mongoStore.hasTable(TEST_COLLECTION));

@@ -164,15 +164,13 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-		DBObject o = findRow(table, id);
-		
-		if (o != null) {
-			try {
-				// TODO: handle return value of the following operation
-				mongoDB.getCollection(table).remove(o);
-			} catch (Exception e) {
-				throw new DatabaseNotReachedException(e);
-			}
+		try {
+			// TODO: handle return value of the following operation
+			mongoDB.getCollection(table).remove(
+				new BasicDBObject(MongoRow.ROW_ENTRY_NAME, id)
+			);
+		} catch (Exception e) {
+			throw new DatabaseNotReachedException(e);
 		}
 	}
 
