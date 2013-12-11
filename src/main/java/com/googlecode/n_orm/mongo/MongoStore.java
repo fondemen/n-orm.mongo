@@ -337,26 +337,17 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
+		DBObject columns;
 		Map<String, byte[]> map = new HashMap();
 
-		DBObject query = new BasicDBObject(
-			"$where",
-			"this." + MongoRow.ROW_ENTRY_NAME + " >= \"" + c.getStartKey() + "\""
-			+ " && " +
-			"this." + MongoRow.ROW_ENTRY_NAME + " <= \"" + c.getEndKey()   + "\""
-		);
-
 		try {
-			DBCursor cursor = mongoDB.getCollection(table).find(query);
+			columns = getColumns(
+				getFamilies(findRow(table, id)),
+				family
+			);
 
-			for (DBObject row : cursor.toArray()) {
-
-				DBObject columns = getColumns(
-					getFamilies(row),
-					family
-				);
-
-				for (String key : columns.keySet()) {
+			for (String key : columns.keySet()) {
+				if (c.sastisfies(key)) {
 					map.put(key, (byte[])(columns.get(key)));
 				}
 			}
