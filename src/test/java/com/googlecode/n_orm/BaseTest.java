@@ -74,6 +74,7 @@ public class BaseTest
 		data.put(TEST_FAMILY, col);
 
 		mongoStore.start();
+		mongoStore.dropTable(COLLECTION);
 
 		// add a collection by inserting something in it
 		mongoStore.insert(null, COLLECTION, TEST_ROW, data);
@@ -101,6 +102,8 @@ public class BaseTest
 		mongoStore.setDB(DBNAME);
 
 		mongoStore.start();
+		mongoStore.dropTable(COLLECTION);
+
 		ColumnFamilyData data = new DefaultColumnFamilyData();
 
 		Map<String, byte[]> col_ret;
@@ -146,7 +149,6 @@ public class BaseTest
 			);
 		}
 
-		mongoStore.delete(null, COLLECTION, "truc");
 		mongoStore.close();
 	}
 
@@ -158,6 +160,8 @@ public class BaseTest
 		mongoStore.setDB(DBNAME);
 
 		mongoStore.start();
+		mongoStore.dropTable(COLLECTION);
+
 		ColumnFamilyData data1 = new DefaultColumnFamilyData();
 		ColumnFamilyData data2 = new DefaultColumnFamilyData();
 
@@ -177,8 +181,18 @@ public class BaseTest
 		mongoStore.insert(null, COLLECTION, "truc",  data1);
 		mongoStore.insert(null, COLLECTION, "chose", data2);
 
-		Constraint c = new Constraint("toto", "toto");
-		col_ret = mongoStore.get(null, COLLECTION, "truc", TEST_FAMILY, c);
-		assertTrue(col_ret.size() == 1);
+		Constraint c1 = new Constraint("truc", "truc");
+		assertTrue(mongoStore.count(null, COLLECTION, c1) == 1);
+
+		Constraint c2 = new Constraint("chose", "truc");
+		assertTrue(mongoStore.count(null, COLLECTION, c2) == 2);
+
+		Constraint c3 = new Constraint("a", "zzzzzzzzzzz");
+		assertTrue(mongoStore.count(null, COLLECTION, c3) == 2);
+
+		Constraint c4 = new Constraint("zzzzzzzzzz", "zzzzzzzzzzzzzzzz");
+		assertTrue(mongoStore.count(null, COLLECTION, c4) == 0);
+
+		mongoStore.close();
 	}
 }

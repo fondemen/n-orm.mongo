@@ -421,25 +421,16 @@ public class MongoStore implements Store, GenericStore
 		}
 
 		long cnt = 0;
-		DBObject columns, families;
+
+		DBObject query = new BasicDBObject(
+			"$where",
+			"this." + MongoRow.ROW_ENTRY_NAME + " >= '" + c.getStartKey() + "'"
+			+ " && " +
+			"this." + MongoRow.ROW_ENTRY_NAME + " <= '" + c.getEndKey()   + "'"
+		);
 
 		try {
-			DBCursor cursor = mongoDB.getCollection(table).find();
-
-			for (DBObject row : cursor.toArray()) {
-				families = getFamilies(row);
-
-				for (String fam : families.keySet()) {
-					columns = getColumns(families, fam);
-
-					for (String key : columns.keySet()) {
-						if (c.sastisfies(key)) {
-							cnt++;
-						}
-					}
-				}
-			}
-
+			cnt = mongoDB.getCollection(table).count(query);
 		} catch (DatabaseNotReachedException e) {
 			throw e;
 		} catch (Exception e) {
