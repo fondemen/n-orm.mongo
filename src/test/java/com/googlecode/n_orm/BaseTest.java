@@ -12,6 +12,7 @@ import com.googlecode.n_orm.StoreSelector;
 import com.googlecode.n_orm.mongo.MongoStore;
 import com.googlecode.n_orm.DatabaseNotReachedException;
 
+import com.googlecode.n_orm.storeapi.Constraint;
 import com.googlecode.n_orm.storeapi.MetaInformation;
 import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
 import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
@@ -21,6 +22,10 @@ public class BaseTest
 {
 	private static String DBNAME     = "n_orm_test";
 	private static String COLLECTION = "defaultcol";
+
+	private String TEST_ROW = "my_super_test_row";
+	private String TEST_FAMILY = "my_super_test_family";
+
 
 	@Before
 	public void prepareTests()
@@ -58,10 +63,6 @@ public class BaseTest
 	@Test
 	public void collectionTest()
 	{
-		String TEST_ROW = "my_super_test_row";
-		String TEST_FAMILY = "my_super_test_family";
-		String TEST_COLLECTION = "my_super_test_collection";
-
 		MongoStore mongoStore = new MongoStore();
 		mongoStore.setDB(DBNAME);
 
@@ -75,20 +76,20 @@ public class BaseTest
 		mongoStore.start();
 
 		// add a collection by inserting something in it
-		mongoStore.insert(null, TEST_COLLECTION, TEST_ROW, data);
+		mongoStore.insert(null, COLLECTION, TEST_ROW, data);
 
 		// test for the existance of the inserted elements
-		assertTrue(mongoStore.hasTable(TEST_COLLECTION));
-		assertTrue(mongoStore.exists(null, TEST_COLLECTION, TEST_ROW));
-		assertTrue(mongoStore.exists(null, TEST_COLLECTION, TEST_ROW, TEST_FAMILY));
+		assertTrue(mongoStore.hasTable(COLLECTION));
+		assertTrue(mongoStore.exists(null, COLLECTION, TEST_ROW));
+		assertTrue(mongoStore.exists(null, COLLECTION, TEST_ROW, TEST_FAMILY));
 
 		// remove an element
-		mongoStore.delete(null, TEST_COLLECTION, TEST_ROW);
-		assertFalse(mongoStore.exists(null, TEST_COLLECTION, TEST_ROW));
+		mongoStore.delete(null, COLLECTION, TEST_ROW);
+		assertFalse(mongoStore.exists(null, COLLECTION, TEST_ROW));
 
 		// remove the table
-		mongoStore.dropTable(TEST_COLLECTION);
-		assertFalse(mongoStore.hasTable(TEST_COLLECTION));
+		mongoStore.dropTable(COLLECTION);
+		assertFalse(mongoStore.hasTable(COLLECTION));
 
 		mongoStore.close();
 	}
@@ -147,5 +148,37 @@ public class BaseTest
 
 		mongoStore.delete(null, COLLECTION, "truc");
 		mongoStore.close();
+	}
+
+
+	@Test
+	public void constraintTest()
+	{
+		MongoStore mongoStore = new MongoStore();
+		mongoStore.setDB(DBNAME);
+
+		mongoStore.start();
+		ColumnFamilyData data1 = new DefaultColumnFamilyData();
+		ColumnFamilyData data2 = new DefaultColumnFamilyData();
+
+		Map<String, byte[]> col_ret;
+		Map<String, byte[]> col1 = new HashMap<String, byte[]>();
+		Map<String, byte[]> col2 = new HashMap<String, byte[]>();
+
+		col1.put("toto", (new String("haha")).getBytes());
+		col1.put("tutu", (new String("bebe")).getBytes());
+
+		col2.put("toto", (new String("truc"    )).getBytes());
+		col2.put("tutu", (new String("chouette")).getBytes());
+
+		data1.put(TEST_FAMILY, col1);
+		data2.put(TEST_FAMILY, col2);
+
+		mongoStore.insert(null, COLLECTION, "truc",  data1);
+		mongoStore.insert(null, COLLECTION, "chose", data2);
+
+		Constraint c = new Constraint("toto", "toto");
+		col_ret = mongoStore.get(null, COLLECTION, "truc", TEST_FAMILY, c);
+		assertTrue(col_ret.size() == 1);
 	}
 }
