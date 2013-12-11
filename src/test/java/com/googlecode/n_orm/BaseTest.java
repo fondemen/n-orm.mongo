@@ -22,6 +22,15 @@ public class BaseTest
 	private static String DBNAME     = "n_orm_test";
 	private static String COLLECTION = "defaultcol";
 
+	private Map<String, byte[]> col_ret;
+	private Map<String, byte[]> col1 = new HashMap<String, byte[]>();
+	private Map<String, byte[]> col2 = new HashMap<String, byte[]>();
+
+	private String TEST_ROW = "my_super_test_row";
+	private String TEST_FAMILY = "my_super_test_family";
+	private String TEST_COLLECTION = "my_super_test_collection";
+
+
 	@Before
 	public void prepareTests()
 	{
@@ -31,7 +40,16 @@ public class BaseTest
 		mongoStore.start();
 		mongoStore.dropTable(COLLECTION);
 		mongoStore.close();
+
+		// build testing data
+		col1.put("toto", (new String("haha")).getBytes());
+		col1.put("tutu", (new String("bebe")).getBytes());
+
+		col2.put("machin", (new String("truc"    )).getBytes());
+		col2.put("bidule", (new String("chouette")).getBytes());
+
 	}
+
 
 	@Test
 	public void notStartedTest()
@@ -58,19 +76,11 @@ public class BaseTest
 	@Test
 	public void collectionTest()
 	{
-		String TEST_ROW = "my_super_test_row";
-		String TEST_FAMILY = "my_super_test_family";
-		String TEST_COLLECTION = "my_super_test_collection";
-
 		MongoStore mongoStore = new MongoStore();
 		mongoStore.setDB(DBNAME);
 
 		ColumnFamilyData data = new DefaultColumnFamilyData();
-		Map<String, byte[]> col = new HashMap<String, byte[]>();
-
-		col.put("toto", (new String("haha")).getBytes());
-		col.put("tutu", (new String("bebe")).getBytes());
-		data.put(TEST_FAMILY, col);
+		data.put(TEST_FAMILY, col1);
 
 		mongoStore.start();
 
@@ -101,16 +111,6 @@ public class BaseTest
 
 		mongoStore.start();
 		ColumnFamilyData data = new DefaultColumnFamilyData();
-
-		Map<String, byte[]> col_ret;
-		Map<String, byte[]> col1 = new HashMap<String, byte[]>();
-		Map<String, byte[]> col2 = new HashMap<String, byte[]>();
-
-		col1.put("toto", (new String("haha")).getBytes());
-		col1.put("tutu", (new String("bebe")).getBytes());
-
-		col2.put("machin", (new String("truc"    )).getBytes());
-		col2.put("bidule", (new String("chouette")).getBytes());
 
 		data.put("1", col1);
 		data.put("2", col2);
