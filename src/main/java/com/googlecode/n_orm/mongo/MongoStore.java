@@ -215,7 +215,11 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-		return (findRow(table, row) == null) ? false : true;
+		long count = mongoDB.getCollection(table).getCount(
+			new BasicDBObject(MongoRow.ROW_ENTRY_NAME, row)
+		);
+
+		return count > 0;
 	}
 
 
