@@ -68,6 +68,7 @@ public class MongoStore implements Store, GenericStore
 	public void start()
 		throws DatabaseNotReachedException
 	{
+		// TODO: make this thread safe
 		if (started) return;
 
 		try {
@@ -113,6 +114,7 @@ public class MongoStore implements Store, GenericStore
 		}
 
 		try {
+			//TODO: cache results
 			ret = mongoDB.collectionExists(tableName);
 		} catch (Exception e) {
 			throw new DatabaseNotReachedException(e);
