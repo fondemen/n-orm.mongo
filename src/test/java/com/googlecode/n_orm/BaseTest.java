@@ -1,5 +1,7 @@
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.Properties;
 import java.util.Arrays;
 
@@ -205,6 +207,53 @@ public class BaseTest
 
 		Constraint c4 = new Constraint("zzzzzzzzzz", "zzzzzzzzzzzzzzzz");
 		assertTrue(mongoStore.count(null, COLLECTION, c4) == 0);
+
+		mongoStore.close();
+	}
+
+	@Test
+	public void storeChangesTest()
+	{
+		MongoStore mongoStore = new MongoStore();
+		mongoStore.setDB(DBNAME);
+
+		mongoStore.start();
+		mongoStore.dropTable(COLLECTION);
+
+		ColumnFamilyData data1 = new DefaultColumnFamilyData();
+
+		Map<String, byte[]> col_ret;
+		Map<String, byte[]> col1 = new HashMap<String, byte[]>();
+		Map<String, byte[]> col2 = new HashMap<String, byte[]>();
+
+		col1.put("toto", (new String("2")).getBytes());
+		col1.put("tutu", (new String("5")).getBytes());
+
+		col2.put("tete", (new String("42")).getBytes());
+		col2.put("titi", (new String("33")).getBytes());
+
+		data1.put("fam1", col1);
+		data1.put("fam2", col2);
+
+		mongoStore.insert(null, COLLECTION, "truc",  data1);
+
+		Map<String, Set<String>> removed = new HashMap<String, Set<String>>();
+		Set s1 = new TreeSet<String>();
+		Set s2 = new TreeSet<String>();
+		s1.add("toto");
+		s2.add("titi");
+		removed.put("fam1", s1);
+		removed.put("fam2", s2);
+
+		mongoStore.storeChanges(null, COLLECTION, "truc", null, removed, null);
+
+		col_ret = mongoStore.get(null, COLLECTION, "truc", "fam1");
+		assertEquals(col_ret.size(), col1.size() - 1);
+		assertArrayEquals(col_ret.get("tutu"), col1.get("tutu"));
+
+		col_ret = mongoStore.get(null, COLLECTION, "truc", "fam2");
+		assertEquals(col_ret.size(), col2.size() - 1);
+		assertArrayEquals(col_ret.get("tete"), col2.get("tete"));
 
 		mongoStore.close();
 	}

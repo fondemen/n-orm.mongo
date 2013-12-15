@@ -462,6 +462,54 @@ public class MongoStore implements Store, GenericStore
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
+
+		// update
+		if (changed != null) {
+			insert(null, table, id, changed);
+		}
+
+
+		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, id);
+
+		// remove columns
+		if (removed != null) {
+			for (String family : removed.keySet()) {
+				Set<String> columns = removed.get(family);
+
+				DBObject unsets = new BasicDBObject();
+				for (String col: columns) {
+					unsets.put(
+						MongoRow.FAM_ENTRIES_NAME + "." + family + "." + col,
+						"''"
+					);
+				}
+
+				mongoDB.getCollection(table).update(
+					query,
+					new BasicDBObject("$unset", unsets)
+				);
+			}
+		}
+
+		// increments
+		if (increments != null) {
+			for (String family : increments.keySet()) {
+				Map<String, Number> columns = increments.get(family);
+
+				DBObject incs = new BasicDBObject();
+				for (String col: columns.keySet()) {
+					incs.put(
+						MongoRow.FAM_ENTRIES_NAME + "." + family + "." + col,
+						columns.get(col)
+					);
+				}
+
+				mongoDB.getCollection(table).update(
+					query,
+					new BasicDBObject("$inc", incs)
+				);
+			}
+		}
 	}
 
 
