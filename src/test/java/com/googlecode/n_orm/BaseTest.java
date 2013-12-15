@@ -120,6 +120,19 @@ public class BaseTest
 		data.put("fam2", col2);
 
 		mongoStore.insert(null, COLLECTION, "truc", data);
+
+		// test full ColumnFamilyData retrieval
+		ColumnFamilyData data_ret
+			= mongoStore.get(null, COLLECTION, "truc", data.keySet());
+		assertEquals(data.size(), data_ret.size());
+		for (String fam : data.keySet()) {
+			for (String col : data.get(fam).keySet()) {
+				assertArrayEquals(
+					data.get(fam).get(col),
+					data_ret.get(fam).get(col)
+				);
+			}
+		}
 		
 		// test columns retrieval
 		col_ret = mongoStore.get(null, COLLECTION, "truc", "fam1");
