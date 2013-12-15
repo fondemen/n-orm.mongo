@@ -15,7 +15,7 @@ import com.mongodb.DBCollection;
 class MongoRow implements Row {
 
 	static final String ROW_ENTRY_NAME = "rowname";
-	static final String FAM_ENTRY_NAME = "families";
+	static final String FAM_ENTRIES_NAME = "families";
 
 	private final String key;
 	private final ColumnFamilyData values;

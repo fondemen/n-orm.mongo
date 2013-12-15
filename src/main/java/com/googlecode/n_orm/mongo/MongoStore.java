@@ -147,7 +147,7 @@ public class MongoStore implements Store, GenericStore
 	protected DBObject getFamilies(DBObject row)
 		throws DatabaseNotReachedException
 	{
-		return (DBObject) row.get(MongoRow.FAM_ENTRY_NAME);
+		return (DBObject) row.get(MongoRow.FAM_ENTRIES_NAME);
 	}
 
 	
@@ -185,20 +185,20 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-		DBObject familyObj = new BasicDBObject();
+		DBObject familiesList = new BasicDBObject();
 		for (Map.Entry<String, Map<String, byte[]>> family : data.entrySet()) {
 
-			DBObject columnObj = new BasicDBObject();
+			DBObject columnsObj = new BasicDBObject();
 			for (Map.Entry<String, byte[]> column : family.getValue().entrySet()) {
-				columnObj.put(column.getKey(), column.getValue());
+				columnsObj.put(column.getKey(), column.getValue());
 			}
 
-			familyObj.put(family.getKey(), columnObj);
+			familiesList.put(family.getKey(), columnsObj);
 		}
 
 		DBObject rowObj = new BasicDBObject();
 		rowObj.put(MongoRow.ROW_ENTRY_NAME, row);
-		rowObj.put(MongoRow.FAM_ENTRY_NAME, familyObj);
+		rowObj.put(MongoRow.FAM_ENTRIES_NAME, familiesList);
 
 		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, row);
 		DBCollection col = mongoDB.getCollection(table);
@@ -278,11 +278,19 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-		DBObject columns;
+		DBObject limitedRow, columns;
+		DBObject query = new BasicDBObject();
+		DBObject keys  = new BasicDBObject();
+		
+		query.put(MongoRow.ROW_ENTRY_NAME, row);
+		keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family + "." + key, 1);
+		keys.put("_id", 0);
 
 		try {
+			limitedRow = mongoDB.getCollection(table).findOne(query, keys);
+
 			columns = getColumns(
-				getFamilies(findRow(table, row)),
+				getFamilies(limitedRow),
 				family
 			);
 		} catch (DatabaseNotReachedException e) {
@@ -306,11 +314,19 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 		
-		DBObject columns;
+		DBObject limitedRow, columns;
+		DBObject query = new BasicDBObject();
+		DBObject keys  = new BasicDBObject();
+		
+		query.put(MongoRow.ROW_ENTRY_NAME, id);
+		keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family, 1);
+		keys.put("_id", 0);
 
 		try {
+			limitedRow = mongoDB.getCollection(table).findOne(query, keys);
+
 			columns = getColumns(
-				getFamilies(findRow(table, id)),
+				getFamilies(limitedRow),
 				family
 			);
 
@@ -337,12 +353,21 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-		DBObject columns;
+		DBObject limitedRow, columns;
 		Map<String, byte[]> map = new HashMap();
 
+		DBObject query = new BasicDBObject();
+		DBObject keys = new BasicDBObject();
+
+		query.put(MongoRow.ROW_ENTRY_NAME, id);
+		keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family, 1);
+		keys.put("_id", 0);
+
 		try {
+			limitedRow = mongoDB.getCollection(table).findOne(query, keys);
+
 			columns = getColumns(
-				getFamilies(findRow(table, id)),
+				getFamilies(limitedRow),
 				family
 			);
 
@@ -373,10 +398,18 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-		DBObject fam, columns;
+		DBObject limitedRow, fam, columns;
+
+		DBObject query = new BasicDBObject();
+		DBObject keys = new BasicDBObject();
+
+		query.put(MongoRow.ROW_ENTRY_NAME, id);
+		keys.put(MongoRow.FAM_ENTRIES_NAME, 1);
+		keys.put("_id", 0);
 
 		try {
-			fam = getFamilies(findRow(table, id));
+			limitedRow = mongoDB.getCollection(table).findOne(query, keys);
+			fam = getFamilies(limitedRow);
 
 			for (String family : families) {
 				Map map = new HashMap();

@@ -116,19 +116,19 @@ public class BaseTest
 		col2.put("machin", (new String("truc"    )).getBytes());
 		col2.put("bidule", (new String("chouette")).getBytes());
 
-		data.put("1", col1);
-		data.put("2", col2);
+		data.put("fam1", col1);
+		data.put("fam2", col2);
 
 		mongoStore.insert(null, COLLECTION, "truc", data);
 		
 		// test columns retrieval
-		col_ret = mongoStore.get(null, COLLECTION, "truc", "1");
+		col_ret = mongoStore.get(null, COLLECTION, "truc", "fam1");
 		assertEquals(col_ret.size(), col1.size());
 		for (String key : col_ret.keySet()) {
 			assertArrayEquals(col_ret.get(key), col1.get(key));
 		}
 
-		col_ret = mongoStore.get(null, COLLECTION, "truc", "2");
+		col_ret = mongoStore.get(null, COLLECTION, "truc", "fam2");
 		assertEquals(col_ret.size(), col2.size());
 		for (String key : col_ret.keySet()) {
 			assertArrayEquals(col_ret.get(key), col2.get(key));
@@ -138,14 +138,14 @@ public class BaseTest
 		for (String key : col1.keySet()) {
 			assertArrayEquals(
 				col1.get(key),
-				mongoStore.get(null, COLLECTION, "truc", "1", key)
+				mongoStore.get(null, COLLECTION, "truc", "fam1", key)
 			);
 		}
 
 		for (String key : col2.keySet()) {
 			assertArrayEquals(
 				col2.get(key),
-				mongoStore.get(null, COLLECTION, "truc", "2", key)
+				mongoStore.get(null, COLLECTION, "truc", "fam2", key)
 			);
 		}
 
