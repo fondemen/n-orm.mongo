@@ -24,7 +24,7 @@ class MongoRow implements Row {
 		key = (String) llRow.get(ROW_ENTRY_NAME);
 		values = new DefaultColumnFamilyData();
 
-		DBObject families = (DBObject) llRow.get(FAM_ENTRY_NAME);
+		DBObject families = (DBObject) llRow.get(FAM_ENTRIES_NAME);
 
 		for (String family : families.keySet()) {
 			Map map = new HashMap();
