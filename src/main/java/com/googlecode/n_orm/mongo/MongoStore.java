@@ -144,6 +144,52 @@ public class MongoStore implements Store, GenericStore
 	}
 
 
+	protected DBObject findLimitedRow(String table, String row)
+		throws DatabaseNotReachedException
+	{
+		return findLimitedRow(table, row, null, null);
+	}
+
+
+	protected DBObject findLimitedRow(String table, String row, String family)
+		throws DatabaseNotReachedException
+	{
+		return findLimitedRow(table, row, family, null);
+	}
+
+	
+	protected DBObject findLimitedRow(
+		String table, String row, String family, String column
+	) throws DatabaseNotReachedException
+	{
+		if (!hasTable(table)) {
+			return null;
+		}
+
+		DBObject limitedRow;
+		DBObject query = new BasicDBObject();
+		DBObject keys = new BasicDBObject();
+
+		query.put(MongoRow.ROW_ENTRY_NAME, row);
+		if (family != null) {
+			if (column != null) {
+				keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family + "." + column, 1);
+			} else {
+				keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family, 1);
+			}
+		}
+		keys.put("_id", 0);
+
+		try {
+			limitedRow = mongoDB.getCollection(table).findOne(query, keys);
+		} catch (Exception e) {
+			throw new DatabaseNotReachedException(e);
+		}
+
+		return limitedRow;
+	}
+
+
 	protected DBObject getFamilies(DBObject row)
 		throws DatabaseNotReachedException
 	{
@@ -242,7 +288,7 @@ public class MongoStore implements Store, GenericStore
 		boolean ret = false;
 
 		try {
-			families = getFamilies(findRow(table, row));
+			families = getFamilies(findLimitedRow(table, row));
 			ret = !families.keySet().isEmpty();
 		} catch (DatabaseNotReachedException e) {
 			throw e;
@@ -279,15 +325,9 @@ public class MongoStore implements Store, GenericStore
 		}
 
 		DBObject limitedRow, columns;
-		DBObject query = new BasicDBObject();
-		DBObject keys  = new BasicDBObject();
-		
-		query.put(MongoRow.ROW_ENTRY_NAME, row);
-		keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family + "." + key, 1);
-		keys.put("_id", 0);
 
 		try {
-			limitedRow = mongoDB.getCollection(table).findOne(query, keys);
+			limitedRow = findLimitedRow(table, row, family, key);
 
 			columns = getColumns(
 				getFamilies(limitedRow),
@@ -315,15 +355,9 @@ public class MongoStore implements Store, GenericStore
 		}
 		
 		DBObject limitedRow, columns;
-		DBObject query = new BasicDBObject();
-		DBObject keys  = new BasicDBObject();
-		
-		query.put(MongoRow.ROW_ENTRY_NAME, id);
-		keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family, 1);
-		keys.put("_id", 0);
 
 		try {
-			limitedRow = mongoDB.getCollection(table).findOne(query, keys);
+			limitedRow = findLimitedRow(table, id, family);
 
 			columns = getColumns(
 				getFamilies(limitedRow),
@@ -356,15 +390,8 @@ public class MongoStore implements Store, GenericStore
 		DBObject limitedRow, columns;
 		Map<String, byte[]> map = new HashMap();
 
-		DBObject query = new BasicDBObject();
-		DBObject keys = new BasicDBObject();
-
-		query.put(MongoRow.ROW_ENTRY_NAME, id);
-		keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family, 1);
-		keys.put("_id", 0);
-
 		try {
-			limitedRow = mongoDB.getCollection(table).findOne(query, keys);
+			limitedRow = findLimitedRow(table, id, family);
 
 			columns = getColumns(
 				getFamilies(limitedRow),
@@ -400,15 +427,8 @@ public class MongoStore implements Store, GenericStore
 
 		DBObject limitedRow, fam, columns;
 
-		DBObject query = new BasicDBObject();
-		DBObject keys = new BasicDBObject();
-
-		query.put(MongoRow.ROW_ENTRY_NAME, id);
-		keys.put(MongoRow.FAM_ENTRIES_NAME, 1);
-		keys.put("_id", 0);
-
 		try {
-			limitedRow = mongoDB.getCollection(table).findOne(query, keys);
+			limitedRow = findLimitedRow(table, id);
 			fam = getFamilies(limitedRow);
 
 			for (String family : families) {
