@@ -37,5 +37,6 @@ final class CloseableIterator implements CloseableKeyIterator
 
 	@Override
 	public void close() {
+		cursor = null;
 	}
 }

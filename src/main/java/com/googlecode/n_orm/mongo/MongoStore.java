@@ -310,7 +310,38 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-		return null;
+		DBObject query = new BasicDBObject();
+		query.put(
+			"$query",
+			new BasicDBObject() // don'task me why, this empty object must be there
+		);
+		query.put(
+			"$where",
+			"this." + MongoRow.ROW_ENTRY_NAME + " >= '" + c.getStartKey() + "'"
+			+ " && " +
+			"this." + MongoRow.ROW_ENTRY_NAME + " <= '" + c.getEndKey()   + "'"
+		);
+		query.put(
+			"$orderby",
+			new BasicDBObject(
+				MongoRow.ROW_ENTRY_NAME,
+				1
+			)
+		);
+		query.put(
+			"$limit",
+			Integer.toString(limit)
+		);
+
+		DBObject keys = new BasicDBObject();
+		for (String family : families) {
+			keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family, 1);
+		}
+		keys.put("_id", 0);
+
+		DBCursor cur = mongoDB.getCollection(table).find(query, keys);
+
+		return new CloseableIterator(cur);
 	}
 
 

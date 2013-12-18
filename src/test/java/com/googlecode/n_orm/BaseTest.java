@@ -16,8 +16,10 @@ import com.googlecode.n_orm.DatabaseNotReachedException;
 
 import com.googlecode.n_orm.storeapi.Constraint;
 import com.googlecode.n_orm.storeapi.MetaInformation;
+import com.googlecode.n_orm.storeapi.Row;
 import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
 import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
+import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 
 
 public class BaseTest
@@ -256,5 +258,50 @@ public class BaseTest
 		assertArrayEquals(col_ret.get("tete"), col2.get("tete"));
 
 		mongoStore.close();
+	}
+
+	@Test
+	public void IteratorTest()
+	{
+		MongoStore mongoStore = new MongoStore();
+		mongoStore.setDB(DBNAME);
+
+		mongoStore.start();
+		mongoStore.dropTable(COLLECTION);
+
+		ColumnFamilyData data1 = new DefaultColumnFamilyData();
+
+		Map<String, byte[]> col_ret;
+		Map<String, byte[]> col1 = new HashMap<String, byte[]>();
+		Map<String, byte[]> col2 = new HashMap<String, byte[]>();
+
+		col1.put("toto", (new String("haha")).getBytes());
+		col1.put("tutu", (new String("bebe")).getBytes());
+		col1.put("titi", (new String("cece")).getBytes());
+		col1.put("tyty", (new String("dede")).getBytes());
+
+		col2.put("toto", (new String("truc"        )).getBytes());
+		col2.put("tutu", (new String("chouette"    )).getBytes());
+		col2.put("titi", (new String("merinos"     )).getBytes());
+		col2.put("tyty", (new String("macrocephale")).getBytes());
+
+		data1.put("fam1", col1);
+		data1.put("fam2", col2);
+
+		mongoStore.insert(null, COLLECTION, "truc",  data1);
+
+		Set<String> families = new TreeSet<String>();
+		families.add("fam1");
+
+		Constraint c1 = new Constraint("truc", "truc");
+		CloseableKeyIterator it = mongoStore.get(
+			null, COLLECTION, c1, 0, families
+		);
+
+		while (it.hasNext()) {
+			Row r = it.next();
+			ColumnFamilyData data_ret = r.getValues();
+			// TODO: test what's in data_ret
+		}
 	}
 }
