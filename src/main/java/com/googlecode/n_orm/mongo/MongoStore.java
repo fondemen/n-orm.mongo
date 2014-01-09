@@ -27,12 +27,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 
 
-/* Implementation notes:
- *
- * A Table ~~ A Collection               ~~ A @persisting class
- * A Row   ~~ A Document (1st lvl entry)
-**/
-
 public class MongoStore implements Store, GenericStore
 {
 	private static String DB_NAME    = "n_orm";
@@ -203,7 +197,7 @@ public class MongoStore implements Store, GenericStore
 		return (DBObject) families.get(familyName);
 	}
 
-
+	
 	public void delete(MetaInformation meta, String table, String id)
 		throws DatabaseNotReachedException
 	{
@@ -251,7 +245,7 @@ public class MongoStore implements Store, GenericStore
 
 		col.update(query, rowObj, true, false);
 	}
-
+	
 
 	public boolean exists(MetaInformation meta, String table, String row)
 		throws DatabaseNotReachedException
@@ -261,14 +255,14 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-		long count;
+		long count = 0;
 		
 		try {
 			count = mongoDB.getCollection(table).getCount(
 				new BasicDBObject(MongoRow.ROW_ENTRY_NAME, row)
 			);
 		} catch (Exception e) {
-			throw new DatabaseNotReachedException(e);
+			//throw new DatabaseNotReachedException(e);
 		}
 
 		return count > 0;
@@ -289,11 +283,9 @@ public class MongoStore implements Store, GenericStore
 
 		try {
 			families = getFamilies(findLimitedRow(table, row));
-			ret = !families.keySet().isEmpty();
-		} catch (DatabaseNotReachedException e) {
-			throw e;
+			ret = families.containsField(family);
 		} catch (Exception e) {
-			throw new DatabaseNotReachedException("Malformed row");
+			//throw new DatabaseNotReachedException(e);
 		}
 
 		return ret;
@@ -315,12 +307,14 @@ public class MongoStore implements Store, GenericStore
 			"$query",
 			new BasicDBObject() // don'task me why, this empty object must be there
 		);
-		query.put(
-			"$where",
-			"this." + MongoRow.ROW_ENTRY_NAME + " >= '" + c.getStartKey() + "'"
-			+ " && " +
-			"this." + MongoRow.ROW_ENTRY_NAME + " <= '" + c.getEndKey()   + "'"
-		);
+		if (c != null) {
+			query.put(
+				"$where",
+				"this." + MongoRow.ROW_ENTRY_NAME + " >= '" + c.getStartKey() + "'"
+				+ " && " +
+				"this." + MongoRow.ROW_ENTRY_NAME + " <= '" + c.getEndKey()   + "'"
+			);
+		}
 		query.put(
 			"$orderby",
 			new BasicDBObject(
@@ -355,6 +349,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
+		byte[] ret;
 		DBObject limitedRow, columns;
 
 		try {
@@ -364,13 +359,14 @@ public class MongoStore implements Store, GenericStore
 				getFamilies(limitedRow),
 				family
 			);
-		} catch (DatabaseNotReachedException e) {
-			throw e;
+
+			ret = (byte[])(columns.get(key));
 		} catch (Exception e) {
-			throw new DatabaseNotReachedException("Malformed row");
+			return null;
+			//throw new DatabaseNotReachedException(e);
 		}
 
-		return (byte[])(columns.get(key));
+		return ret;
 	}
 
 
@@ -399,14 +395,14 @@ public class MongoStore implements Store, GenericStore
 				map.put(key, (byte[])(columns.get(key)));
 			}
 
-		} catch (DatabaseNotReachedException e) {
-			throw e;
 		} catch (Exception e) {
-			throw new DatabaseNotReachedException("Malformed row");
+			return null;
+			//throw new DatabaseNotReachedException(e);
 		}
 
 		return map;
 	}
+
 
 	public Map<String, byte[]> get(
 		MetaInformation meta, String table,
@@ -430,19 +426,18 @@ public class MongoStore implements Store, GenericStore
 			);
 
 			for (String key : columns.keySet()) {
-				if (c.sastisfies(key)) {
+				if (c != null && c.sastisfies(key)) {
 					map.put(key, (byte[])(columns.get(key)));
 				}
 			}
 
-		} catch (DatabaseNotReachedException e) {
-			throw e;
 		} catch (Exception e) {
-			throw new DatabaseNotReachedException("Malformed row");
+			throw new DatabaseNotReachedException(e);
 		}
 
 		return map;
 	}
+
 
 	public ColumnFamilyData get(
 		MetaInformation meta, String table, String id, Set<String> families
@@ -472,10 +467,9 @@ public class MongoStore implements Store, GenericStore
 
 				mapOfMaps.put(family, map);
 			}
-		} catch (DatabaseNotReachedException e) {
-			throw e;
 		} catch (Exception e) {
-			throw new DatabaseNotReachedException("Malformed row");
+			return null;
+			//throw new DatabaseNotReachedException(e);
 		}
 
 		return new DefaultColumnFamilyData(mapOfMaps);
@@ -554,19 +548,20 @@ public class MongoStore implements Store, GenericStore
 
 		long cnt = 0;
 
-		DBObject query = new BasicDBObject(
-			"$where",
-			"this." + MongoRow.ROW_ENTRY_NAME + " >= '" + c.getStartKey() + "'"
-			+ " && " +
-			"this." + MongoRow.ROW_ENTRY_NAME + " <= '" + c.getEndKey()   + "'"
-		);
+		DBObject query = new BasicDBObject();
+
+		if (c != null) {
+			query.put(
+				"$where",
+				"this." + MongoRow.ROW_ENTRY_NAME + " >= '" + c.getStartKey() + "'"
+				+ " && " +
+				"this." + MongoRow.ROW_ENTRY_NAME + " <= '" + c.getEndKey()   + "'"
+			);
+		}
 
 		try {
 			cnt = mongoDB.getCollection(table).count(query);
-		} catch (DatabaseNotReachedException e) {
-			throw e;
 		} catch (Exception e) {
-			throw new DatabaseNotReachedException("Malformed row");
 		}
 
 		return cnt;
