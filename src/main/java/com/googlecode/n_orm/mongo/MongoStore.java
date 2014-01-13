@@ -62,39 +62,40 @@ public class MongoStore implements Store, GenericStore
 	public void start()
 		throws DatabaseNotReachedException
 	{
-		// TODO: make this thread safe
-		if (started) return;
+		synchronized (MongoStore.class) {
+			if (started) return;
 
-		try {
-			Mongo.mongoLog.log(
-				Level.FINE,
-				"Trying to connect to the mongo database "+host+":"+port
-			);
-			mongoClient = new MongoClient(host, port);
+			try {
+				Mongo.mongoLog.log(
+					Level.FINE,
+					"Trying to connect to the mongo database "+host+":"+port
+				);
+				mongoClient = new MongoClient(host, port);
 
-		} catch(Exception e) {
-			Mongo.mongoLog.log(
-				Level.SEVERE,
-				"Could not find "+host+":"+port
-			);
-			throw new DatabaseNotReachedException(e);
+			} catch(Exception e) {
+				Mongo.mongoLog.log(
+					Level.SEVERE,
+					"Could not find "+host+":"+port
+				);
+				throw new DatabaseNotReachedException(e);
+			}
+
+			try {
+				mongoDB = mongoClient.getDB(db);
+				// Mongo won't complain that it couldn't connect to the database
+				// until the first access attempt. Force access to the DB.
+				mongoDB.getCollectionNames();
+
+			} catch(Exception e) {
+				Mongo.mongoLog.log(
+					Level.SEVERE,
+					"Could not find a running database on "+host+":"+port
+				);
+				throw new DatabaseNotReachedException(e);
+			}
+
+			started = true;
 		}
-
-		try {
-			mongoDB = mongoClient.getDB(db);
-			// Mongo won't complain that it couldn't connect to the database
-			// until the first access attempt. Force access to the DB.
-			mongoDB.getCollectionNames();
-
-		} catch(Exception e) {
-			Mongo.mongoLog.log(
-				Level.SEVERE,
-				"Could not find a running database on "+host+":"+port
-			);
-			throw new DatabaseNotReachedException(e);
-		}
-
-		started = true;
 	}
 
 	public boolean hasTable(String tableName)
