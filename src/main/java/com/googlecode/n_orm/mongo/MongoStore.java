@@ -328,8 +328,10 @@ public class MongoStore implements Store, GenericStore
 		);
 
 		DBObject keys = new BasicDBObject();
-		for (String family : families) {
-			keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family, 1);
+		if (families != null) {
+			for (String family : families) {
+				keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family, 1);
+			}
 		}
 		keys.put("_id", 0);
 
