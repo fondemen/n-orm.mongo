@@ -183,6 +183,7 @@ public class BasicTest {
 	}
 	
 	@Test
+	@Ignore
 	public void test40getWithConstraintOnKeys() {
 		assertEquals(4, store.get(testTable, "400000", "family1", new Constraint("a", "d")).size());
 		Constraint c = null;
