@@ -2,11 +2,7 @@ package com.googlecode.n_orm.mongo;
 
 import com.googlecode.n_orm.storeapi.Row;
 import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
-
-import com.mongodb.DB;
-import com.mongodb.DBObject;
 import com.mongodb.DBCursor;
-import com.mongodb.BasicDBObject;
 
 final class CloseableIterator implements CloseableKeyIterator
 {

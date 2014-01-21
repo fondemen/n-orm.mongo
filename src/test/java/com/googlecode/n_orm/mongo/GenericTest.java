@@ -15,7 +15,8 @@ public class GenericTest {
 	private static String DBNAME          = "n_orm_test";
 	private static final String testTable = "testtable";
 
-	@BeforeClass public static void setupStore() {
+	@BeforeClass
+	public static void setupStore() {
 
 		MongoStore ms = new MongoStore();
 		ms.setDB(DBNAME);

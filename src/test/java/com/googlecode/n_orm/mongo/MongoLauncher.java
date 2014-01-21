@@ -18,13 +18,6 @@ public class MongoLauncher extends StoreTestLauncher {
 			com.googlecode.n_orm.mongo.MongoStore.class.getName()
 		);
 
-		/*
-		p.put(
-			StoreSelector.STORE_DRIVERCLASS_STATIC_ACCESSOR,
-			"getStore"
-		);
-		*/
-
 		return p;
 	}
 
