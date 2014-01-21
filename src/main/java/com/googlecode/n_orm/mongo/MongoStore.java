@@ -428,8 +428,24 @@ public class MongoStore implements Store, GenericStore
 				family
 			);
 
-			for (String key : columns.keySet()) {
-				if (c != null && c.sastisfies(key)) {
+			if (c != null) {
+				for (String key : columns.keySet()) {
+                    boolean ok1 = true;
+                    boolean ok2 = true;
+                    if (c.getStartKey() != null) {
+                        ok1 = key.compareTo(c.getStartKey()) >= 0;
+                    }
+                    if (c.getEndKey() != null) {
+                        ok2 = key.compareTo(c.getEndKey()) <= 0;
+                    }
+					if (ok1 && ok2) {
+						map.put(key, (byte[])(columns.get(key)));
+					}
+				}
+			}
+			
+			else {
+				for (String key : columns.keySet()) {
 					map.put(key, (byte[])(columns.get(key)));
 				}
 			}
