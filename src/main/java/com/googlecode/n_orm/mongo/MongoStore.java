@@ -59,49 +59,53 @@ public class MongoStore implements Store, GenericStore
 	private boolean started = false;
 
 
-	public void start()
+	public synchronized void start()
 		throws DatabaseNotReachedException
 	{
-		synchronized (MongoStore.class) {
-			if (started) return;
+        if (started) return;
 
-			try {
-				Mongo.mongoLog.log(
-					Level.FINE,
-					"Trying to connect to the mongo database "+host+":"+port
-				);
-				mongoClient = new MongoClient(host, port);
+        try {
+            Mongo.mongoLog.log(
+                Level.FINE,
+                "Trying to connect to the mongo database "+host+":"+port
+            );
+            mongoClient = new MongoClient(host, port);
 
-			} catch(Exception e) {
-				Mongo.mongoLog.log(
-					Level.SEVERE,
-					"Could not find "+host+":"+port
-				);
-				throw new DatabaseNotReachedException(e);
-			}
+        } catch(Exception e) {
+            Mongo.mongoLog.log(
+                Level.SEVERE,
+                "Could not find "+host+":"+port
+            );
+            throw new DatabaseNotReachedException(e);
+        }
 
-			try {
-				mongoDB = mongoClient.getDB(db);
-				// Mongo won't complain that it couldn't connect to the database
-				// until the first access attempt. Force access to the DB.
-				mongoDB.getCollectionNames();
+        try {
+            mongoDB = mongoClient.getDB(db);
+            // Mongo won't complain that it couldn't connect to the database
+            // until the first access attempt. Force access to the DB.
+            mongoDB.getCollectionNames();
 
-			} catch(Exception e) {
-				Mongo.mongoLog.log(
-					Level.SEVERE,
-					"Could not find a running database on "+host+":"+port
-				);
-				throw new DatabaseNotReachedException(e);
-			}
+        } catch(Exception e) {
+            Mongo.mongoLog.log(
+                Level.SEVERE,
+                "Could not find a running database on "+host+":"+port
+            );
+            throw new DatabaseNotReachedException(e);
+        }
 
-			started = true;
-		}
+        started = true;
 	}
+
+    protected String sanitizeTableName(String table) {
+        return table.replaceAll("[$]", "_MongoSanitizedDollarSign_");
+    }
 
 	public boolean hasTable(String tableName)
 		throws DatabaseNotReachedException
 	{
 		boolean ret;
+
+        tableName = tableName.replaceAll("[$]", "_dollarSign_");
 
 		if (!started) {
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
@@ -121,9 +125,12 @@ public class MongoStore implements Store, GenericStore
 	protected DBObject findRow(String table, String row)
 		throws DatabaseNotReachedException
 	{
+        table = sanitizeTableName(table);
+
 		if (!hasTable(table)) {
 			return null;
 		}
+
 
 		DBObject o;
 
@@ -157,6 +164,8 @@ public class MongoStore implements Store, GenericStore
 		String table, String row, String family, String column
 	) throws DatabaseNotReachedException
 	{
+        table = sanitizeTableName(table);
+
 		if (!hasTable(table)) {
 			return null;
 		}
@@ -207,6 +216,8 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
+        table = sanitizeTableName(table);
+
 		try {
 			// TODO: handle return value of the following operation
 			mongoDB.getCollection(table).remove(
@@ -226,6 +237,8 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
+        table = sanitizeTableName(table);
+
 		DBObject familiesList = new BasicDBObject();
 		for (Map.Entry<String, Map<String, byte[]>> family : data.entrySet()) {
 
@@ -244,6 +257,7 @@ public class MongoStore implements Store, GenericStore
 		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, row);
 		DBCollection col = mongoDB.getCollection(table);
 
+        assert(col != null);
 		col.update(query, rowObj, true, false);
 	}
 	
@@ -255,6 +269,8 @@ public class MongoStore implements Store, GenericStore
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
+
+        table = sanitizeTableName(table);
 
 		long count = 0;
 		
@@ -279,6 +295,8 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
+        table = sanitizeTableName(table);
+
 		DBObject families;
 		boolean ret = false;
 
@@ -302,6 +320,8 @@ public class MongoStore implements Store, GenericStore
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
+
+        table = sanitizeTableName(table);
 
 		DBObject query = new BasicDBObject();
 		query.put(
@@ -352,6 +372,8 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
+        table = sanitizeTableName(table);
+
 		byte[] ret;
 		DBObject limitedRow, columns;
 
@@ -383,6 +405,8 @@ public class MongoStore implements Store, GenericStore
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
+
+        table = sanitizeTableName(table);
 		
 		DBObject limitedRow, columns;
 
@@ -416,6 +440,8 @@ public class MongoStore implements Store, GenericStore
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
+
+        table = sanitizeTableName(table);
 
 		DBObject limitedRow, columns;
 		Map<String, byte[]> map = new HashMap();
@@ -470,6 +496,8 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
+        table = sanitizeTableName(table);
+
 		DBObject limitedRow, fam, columns;
 
 		try {
@@ -506,6 +534,8 @@ public class MongoStore implements Store, GenericStore
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
+
+        table = sanitizeTableName(table);
 
 		// update
 		if (changed != null) {
@@ -565,6 +595,8 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
+        table = sanitizeTableName(table);
+
 		long cnt = 0;
 
 		DBObject query = new BasicDBObject();
@@ -592,6 +624,8 @@ public class MongoStore implements Store, GenericStore
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
+
+        table = sanitizeTableName(table);
 
 		try {
 			mongoDB.getCollection(table).drop();
