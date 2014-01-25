@@ -26,15 +26,23 @@ class MongoRow implements Row {
 
 		DBObject families = (DBObject) llRow.get(FAM_ENTRIES_NAME);
 
-		for (String family : families.keySet()) {
-			Map map = new HashMap();
-			DBObject columns = (DBObject) families.get(family);
+		if (families != null) {
+			for (String family : families.keySet()) {
+				Map map = new HashMap();
+				DBObject columns = (DBObject) families.get(family);
 
-			for (String key : columns.keySet()) {
-				map.put(key, (byte[])(columns.get(key)));
+				for (String key : columns.keySet()) {
+					map.put(
+						MongoNameSanitizer.dirty(key),
+						(byte[])(columns.get(key))
+					);
+				}
+
+				values.put(
+					MongoNameSanitizer.dirty(family),
+					map
+				);
 			}
-
-			values.put(family, map);
 		}
 	}
 

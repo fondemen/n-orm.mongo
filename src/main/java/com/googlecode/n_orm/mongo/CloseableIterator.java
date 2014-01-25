@@ -2,6 +2,7 @@ package com.googlecode.n_orm.mongo;
 
 import com.googlecode.n_orm.storeapi.Row;
 import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
 
 final class CloseableIterator implements CloseableKeyIterator
@@ -19,7 +20,13 @@ final class CloseableIterator implements CloseableKeyIterator
 
 	@Override
 	public Row next() {
-		return new MongoRow(cursor.next());
+		MongoRow row = null;
+
+		if (cursor.hasNext()) {
+			row = new MongoRow(cursor.next());
+		}
+
+		return row;
 	}
 
 	public Row curr() {

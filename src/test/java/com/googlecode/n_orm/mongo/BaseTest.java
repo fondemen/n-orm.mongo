@@ -230,34 +230,34 @@ public class BaseTest
 		Map<String, byte[]> col1 = new HashMap<String, byte[]>();
 		Map<String, byte[]> col2 = new HashMap<String, byte[]>();
 
-		col1.put("toto", (new String("2")).getBytes());
-		col1.put("tutu", (new String("5")).getBytes());
+		col1.put("to.$to", (new String("2")).getBytes());
+		col1.put("tu.$tu", (new String("5")).getBytes());
 
-		col2.put("tete", (new String("42")).getBytes());
-		col2.put("titi", (new String("33")).getBytes());
+		col2.put("te.$te", (new String("42")).getBytes());
+		col2.put("ti.$ti", (new String("33")).getBytes());
 
-		data1.put("fam1", col1);
-		data1.put("fam2", col2);
+		data1.put("fa.$m1", col1);
+		data1.put("fa.$m2", col2);
 
-		mongoStore.insert(null, COLLECTION, "truc",  data1);
+		mongoStore.insert(null, COLLECTION, "tr.$uc",  data1);
 
 		Map<String, Set<String>> removed = new HashMap<String, Set<String>>();
 		Set s1 = new TreeSet<String>();
 		Set s2 = new TreeSet<String>();
-		s1.add("toto");
-		s2.add("titi");
-		removed.put("fam1", s1);
-		removed.put("fam2", s2);
+		s1.add("to.$to");
+		s2.add("ti.$ti");
+		removed.put("fa.$m1", s1);
+		removed.put("fa.$m2", s2);
 
-		mongoStore.storeChanges(null, COLLECTION, "truc", null, removed, null);
+		mongoStore.storeChanges(null, COLLECTION, "tr.$uc", null, removed, null);
 
-		col_ret = mongoStore.get(null, COLLECTION, "truc", "fam1");
+		col_ret = mongoStore.get(null, COLLECTION, "tr.$uc", "fa.$m1");
 		assertEquals(col_ret.size(), col1.size() - 1);
-		assertArrayEquals(col_ret.get("tutu"), col1.get("tutu"));
+		assertArrayEquals(col_ret.get("tu.$tu"), col1.get("tu.$tu"));
 
-		col_ret = mongoStore.get(null, COLLECTION, "truc", "fam2");
+		col_ret = mongoStore.get(null, COLLECTION, "tr.$uc", "fa.$m2");
 		assertEquals(col_ret.size(), col2.size() - 1);
-		assertArrayEquals(col_ret.get("tete"), col2.get("tete"));
+		assertArrayEquals(col_ret.get("te.$te"), col2.get("te.$te"));
 
 		mongoStore.close();
 	}
@@ -277,25 +277,25 @@ public class BaseTest
 		Map<String, byte[]> col1 = new HashMap<String, byte[]>();
 		Map<String, byte[]> col2 = new HashMap<String, byte[]>();
 
-		col1.put("toto", (new String("haha")).getBytes());
-		col1.put("tutu", (new String("bebe")).getBytes());
-		col1.put("titi", (new String("cece")).getBytes());
-		col1.put("tyty", (new String("dede")).getBytes());
+		col1.put("to$to", (new String("ha.ha")).getBytes());
+		col1.put("tu$tu", (new String("be.be")).getBytes());
+		col1.put("ti$ti", (new String("ce.ce")).getBytes());
+		col1.put("ty$ty", (new String("de.de")).getBytes());
 
-		col2.put("toto", (new String("truc"        )).getBytes());
-		col2.put("tutu", (new String("chouette"    )).getBytes());
-		col2.put("titi", (new String("merinos"     )).getBytes());
-		col2.put("tyty", (new String("macrocephale")).getBytes());
+		col2.put("to$to", (new String("truc"        )).getBytes());
+		col2.put("tu$tu", (new String("chouette"    )).getBytes());
+		col2.put("ti$ti", (new String("merinos"     )).getBytes());
+		col2.put("ty$ty", (new String("macrocephale")).getBytes());
 
-		data1.put("fam1", col1);
-		data1.put("fam2", col2);
+		data1.put("fa.$m1", col1);
+		data1.put("fa.$m2", col2);
 
-		mongoStore.insert(null, COLLECTION, "truc",  data1);
+		mongoStore.insert(null, COLLECTION, "tr.$uc",  data1);
 
 		Set<String> families = new TreeSet<String>();
-		families.add("fam1");
+		families.add("fa.$m1");
 
-		Constraint c1 = new Constraint("truc", "truc");
+		Constraint c1 = new Constraint("tr.$uc", "tr.$uc");
 		CloseableKeyIterator it = mongoStore.get(
 			null, COLLECTION, c1, 0, families
 		);

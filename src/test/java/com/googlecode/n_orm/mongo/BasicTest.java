@@ -127,7 +127,6 @@ public class BasicTest {
 	}
 	
 	@Test
-	@Ignore
 	public void test15getIterator() {
 		Set<String> families = new TreeSet<String>();
 		families.add("family1");
