@@ -180,6 +180,8 @@ public class MongoStore implements Store, GenericStore
 			} else {
 				keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family, 1);
 			}
+		} else {
+			keys.put(MongoRow.FAM_ENTRIES_NAME, 1);
 		}
 		keys.put(MongoRow.ROW_ENTRY_NAME, 1);
 		keys.put("_id", 0);
@@ -313,7 +315,9 @@ public class MongoStore implements Store, GenericStore
 		boolean ret = false;
 
 		try {
-			families = getFamilies(findLimitedRow(sanitizedTableName, sanitizedRowName));
+			families = getFamilies(
+				findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamilyName)
+			);
 			ret = families.containsField(sanitizedFamilyName);
 		} catch (Exception e) {
 			//throw new DatabaseNotReachedException(e);
@@ -609,6 +613,7 @@ public class MongoStore implements Store, GenericStore
 		}
 
 		// increments
+		/*
 		if (increments != null) {
 			for (Map.Entry<String, Map<String, Number>> family : increments.entrySet()) {
 				String sanitizedFamilyName = sanitizeName(family.getKey());
@@ -629,6 +634,7 @@ public class MongoStore implements Store, GenericStore
 				);
 			}
 		}
+		*/
 	}
 
 
