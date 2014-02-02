@@ -340,29 +340,17 @@ public class MongoStore implements Store, GenericStore
         String sanitizedTableName = sanitizeName(table);
 
 		DBObject query = new BasicDBObject();
-		query.put(
-			"$query",
-			new BasicDBObject() // don'task me why, this empty object must be there
-		);
 		if (c != null) {
 			query.put(
-				"$where",
-				"this." + MongoRow.ROW_ENTRY_NAME + " >= '" + sanitizeName(c.getStartKey()) + "'"
-				+ " && " +
-				"this." + MongoRow.ROW_ENTRY_NAME + " <= '" + sanitizeName(c.getEndKey())   + "'"
+                "$where",
+                "this." + MongoRow.ROW_ENTRY_NAME + " >= '" + sanitizeName(c.getStartKey()) + "'"
+                + " && " +
+                "this." + MongoRow.ROW_ENTRY_NAME + " <= '" + sanitizeName(c.getEndKey())   + "'"
+				//"this." + MongoRow.ROW_ENTRY_NAME + ".localeCompare('" + sanitizeName(c.getStartKey()) + "') >= 0"
+				//+ " && " +
+				//"this." + MongoRow.ROW_ENTRY_NAME + ".localeCompare('" + sanitizeName(c.getEndKey())   + "') <= 0"
 			);
 		}
-		query.put(
-			"$orderby",
-			new BasicDBObject(
-				MongoRow.ROW_ENTRY_NAME,
-				1
-			)
-		);
-		query.put(
-			"$limit",
-			Integer.toString(limit)
-		);
 
 		DBObject keys = new BasicDBObject();
 		if (families != null) {
@@ -370,11 +358,18 @@ public class MongoStore implements Store, GenericStore
 				String sanitizedFamilyName = sanitizeName(family);
 				keys.put(MongoRow.FAM_ENTRIES_NAME + "." + sanitizedFamilyName, 1);
 			}
-		}
+		} else {
+            keys.put(MongoRow.FAM_ENTRIES_NAME, 1);
+        }
 		keys.put(MongoRow.ROW_ENTRY_NAME, 1);
 		keys.put("_id", 0);
 
-		DBCursor cur = mongoDB.getCollection(sanitizedTableName).find(query, keys);
+		BasicDBObject mastoQuery = new BasicDBObject();
+		mastoQuery.put("$query",   query);
+		mastoQuery.put("$limit",   Integer.toString(limit));
+		mastoQuery.put("$orderby", new BasicDBObject(MongoRow.ROW_ENTRY_NAME, 1));
+
+		DBCursor cur = mongoDB.getCollection(sanitizedTableName).find(mastoQuery, keys);
 
 		return new CloseableIterator(cur);
 	}
