@@ -21,7 +21,7 @@ class MongoRow implements Row {
 	private final ColumnFamilyData values;
 
 	public MongoRow(DBObject llRow) {
-		key = (String) llRow.get(ROW_ENTRY_NAME);
+		key = MongoNameSanitizer.dirty((String) llRow.get(ROW_ENTRY_NAME));
 		values = new DefaultColumnFamilyData();
 
 		DBObject families = (DBObject) llRow.get(FAM_ENTRIES_NAME);
@@ -31,10 +31,10 @@ class MongoRow implements Row {
 				Map map = new HashMap();
 				DBObject columns = (DBObject) families.get(family);
 
-				for (String key : columns.keySet()) {
+				for (String k : columns.keySet()) {
 					map.put(
-						MongoNameSanitizer.dirty(key),
-						(byte[])(columns.get(key))
+						MongoNameSanitizer.dirty(k),
+						(byte[])(columns.get(k))
 					);
 				}
 
