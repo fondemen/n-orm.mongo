@@ -416,9 +416,6 @@ public class MongoStore implements Store, GenericStore
                 "this." + MongoRow.ROW_ENTRY_NAME + " >= '" + sanitizeName(c.getStartKey()) + "'"
                 + " && " +
                 "this." + MongoRow.ROW_ENTRY_NAME + " <= '" + sanitizeName(c.getEndKey())   + "'"
-				//"this." + MongoRow.ROW_ENTRY_NAME + ".localeCompare('" + sanitizeName(c.getStartKey()) + "') >= 0"
-				//+ " && " +
-				//"this." + MongoRow.ROW_ENTRY_NAME + ".localeCompare('" + sanitizeName(c.getEndKey())   + "') <= 0"
 			);
 		}
 
@@ -483,11 +480,11 @@ public class MongoStore implements Store, GenericStore
 				sanitizedFamilyName
 			);
 
-			if (columns.containsField(sanitizedFamilyName)) {
+			if (columns.containsField(sanitizedKeyName)) {
 				ret = (byte[])(columns.get(sanitizedKeyName));
 			}
 
-			else if (inc_columns.containsField(sanitizedFamilyName)) {
+			else if (inc_columns.containsField(sanitizedKeyName)) {
 				Number n = (Number) inc_columns.get(sanitizedFamilyName);
 				ret = ByteBuffer.allocate(4).putInt(n.intValue()).array();
 			}
