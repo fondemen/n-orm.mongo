@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.HashMap;
 
 import com.googlecode.n_orm.storeapi.Row;
-import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
 import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
 
 import com.mongodb.BasicDBObject;
