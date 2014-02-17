@@ -1,5 +1,6 @@
 package com.googlecode.n_orm.mongo;
 
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -7,15 +8,15 @@ import com.googlecode.n_orm.storeapi.Row;
 import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
 import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
 
-import com.mongodb.DBObject;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 
 
 class MongoRow implements Row {
 
 	static final String ROW_ENTRY_NAME = "rowname";
 	static final String FAM_ENTRIES_NAME = "families";
+	static final String INC_ENTRIES_NAME = "families_inc";
 
 	private final String key;
 	private final ColumnFamilyData values;
@@ -24,25 +25,50 @@ class MongoRow implements Row {
 		key = MongoNameSanitizer.dirty((String) llRow.get(ROW_ENTRY_NAME));
 		values = new DefaultColumnFamilyData();
 
-		DBObject families = (DBObject) llRow.get(FAM_ENTRIES_NAME);
+		DBObject families     = (DBObject) llRow.get(FAM_ENTRIES_NAME);
+		DBObject inc_families = (DBObject) llRow.get(INC_ENTRIES_NAME);
 
-		if (families != null) {
-			for (String family : families.keySet()) {
-				Map map = new HashMap();
-				DBObject columns = (DBObject) families.get(family);
+		if (families == null) {
+			families = new BasicDBObject();
+		}
 
-				for (String k : columns.keySet()) {
-					map.put(
-						MongoNameSanitizer.dirty(k),
-						(byte[])(columns.get(k))
-					);
-				}
+		if (inc_families == null) {
+			inc_families = new BasicDBObject();
+		}
 
-				values.put(
-					MongoNameSanitizer.dirty(family),
-					map
+		for (String family : families.keySet()) {
+			Map<String, byte[]> map = new HashMap<String, byte[]>();
+			DBObject columns = (DBObject) families.get(family);
+
+			for (String k : columns.keySet()) {
+				map.put(
+					MongoNameSanitizer.dirty(k),
+					(byte[])(columns.get(k))
 				);
 			}
+
+			values.put(
+				MongoNameSanitizer.dirty(family),
+				map
+			);
+		}
+
+		for (String family: inc_families.keySet()) {
+			Map<String, byte[]> map = new HashMap<String, byte[]>();
+			DBObject columns = (DBObject) inc_families.get(family);
+
+			for (String k : columns.keySet()) {
+				Number n = (Number) columns.get(k);
+				map.put(
+					MongoNameSanitizer.dirty(k),
+					ByteBuffer.allocate(4).putInt(n.intValue()).array()
+				);
+			}
+
+			values.put(
+				MongoNameSanitizer.dirty(family),
+				map
+			);
 		}
 	}
 

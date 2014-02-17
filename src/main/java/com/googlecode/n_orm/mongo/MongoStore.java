@@ -1,5 +1,6 @@
 package com.googlecode.n_orm.mongo;
 
+import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
@@ -177,11 +178,14 @@ public class MongoStore implements Store, GenericStore
 		if (family != null) {
 			if (column != null) {
 				keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family + "." + column, 1);
+				keys.put(MongoRow.INC_ENTRIES_NAME + "." + family + "." + column, 1);
 			} else {
 				keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family, 1);
+				keys.put(MongoRow.INC_ENTRIES_NAME + "." + family, 1);
 			}
 		} else {
 			keys.put(MongoRow.FAM_ENTRIES_NAME, 1);
+			keys.put(MongoRow.INC_ENTRIES_NAME, 1);
 		}
 		keys.put(MongoRow.ROW_ENTRY_NAME, 1);
 		keys.put("_id", 0);
@@ -199,14 +203,24 @@ public class MongoStore implements Store, GenericStore
 	protected DBObject getFamilies(DBObject row)
 		throws DatabaseNotReachedException
 	{
-		return (DBObject) row.get(MongoRow.FAM_ENTRIES_NAME);
+		DBObject fam = (DBObject) row.get(MongoRow.FAM_ENTRIES_NAME);
+		return (fam != null) ? fam : new BasicDBObject();
 	}
 
-	
+
+	protected DBObject getIncFamilies(DBObject row)
+		throws DatabaseNotReachedException
+	{
+		DBObject fam = (DBObject) row.get(MongoRow.INC_ENTRIES_NAME);
+		return (fam != null) ? fam : new BasicDBObject();
+	}
+
+
 	protected DBObject getColumns(DBObject families, String familyName)
 		throws DatabaseNotReachedException
 	{
-		return (DBObject) families.get(familyName);
+		DBObject cols = (DBObject) families.get(familyName);
+		return (cols != null) ? cols : new BasicDBObject();
 	}
 
 	
@@ -222,7 +236,6 @@ public class MongoStore implements Store, GenericStore
 		String sanitizedRowName = sanitizeName(id);
 
 		try {
-			// TODO: handle return value of the following operation
 			mongoDB.getCollection(sanitizedTableName).remove(
 				new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName)
 			);
@@ -230,6 +243,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException(e);
 		}
 	}
+
 
 	public void insert(
 			MetaInformation meta, String table, String row, ColumnFamilyData data
@@ -251,25 +265,82 @@ public class MongoStore implements Store, GenericStore
 			for (Map.Entry<String, byte[]> column : family.getValue().entrySet()) {
 				String sanitizedColumnName = sanitizeName(column.getKey());
 				columnsObj.put(
-					sanitizedColumnName,
-					column.getValue()
+					sanitizedColumnName, column.getValue()
 				);
 			}
 
-			familiesList.put(
-				sanitizedFamilyName,
-				columnsObj
-			);
+			familiesList.put(sanitizedFamilyName, columnsObj);
+		}
+
+		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
+
+		DBObject rowObj = new BasicDBObject();
+		rowObj.put("$set", query); // ensure the row exists
+		rowObj.put("$set", new BasicDBObject(MongoRow.FAM_ENTRIES_NAME, familiesList));   // replace columns contents
+
+		DBCollection col = mongoDB.getCollection(sanitizedTableName);
+		col.update(query, rowObj, true, false);
+	}
+
+	public void increment(String table, String row, Map<String, Map<String, Number>> increments) {
+
+		String sanitizedTableName = sanitizeName(table);
+		String sanitizedRowName = sanitizeName(row);
+
+		DBObject incs  = new BasicDBObject();
+		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
+
+		for (Map.Entry<String, Map<String, Number>> family : increments.entrySet()) {
+			String sanitizedFamilyName = sanitizeName(family.getKey());
+			Map<String, Number> columns = family.getValue();
+
+			for (Map.Entry<String, Number> col : columns.entrySet()) {
+				String sanitizedColumnName = sanitizeName(col.getKey());
+				incs.put(
+					MongoRow.INC_ENTRIES_NAME + "." + sanitizedFamilyName + "." + sanitizedColumnName,
+					col.getValue()
+				);
+			}
+
 		}
 
 		DBObject rowObj = new BasicDBObject();
-		rowObj.put(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
-		rowObj.put(MongoRow.FAM_ENTRIES_NAME, familiesList);
+		rowObj.put("$set", query);
+		rowObj.put("$inc", incs);
 
-		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
 		DBCollection col = mongoDB.getCollection(sanitizedTableName);
-
 		col.update(query, rowObj, true, false);
+	}
+
+	public void remove(String table, String row, Map<String, Set<String>> removed) {
+
+		String sanitizedRowName   = sanitizeName(row);
+		String sanitizedTableName = sanitizeName(table);
+
+		DBObject unsets = new BasicDBObject();
+		DBObject query  = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
+
+		for (Map.Entry<String, Set<String>> family : removed.entrySet()) {
+			String sanitizedFamilyName = sanitizeName(family.getKey());
+			Set<String> columns = family.getValue();
+
+			for (String col: columns) {
+				String sanitizedColumnName = sanitizeName(col);
+				unsets.put(
+					MongoRow.FAM_ENTRIES_NAME + "." + sanitizedFamilyName + "." + sanitizedColumnName,
+					""
+				);
+				unsets.put(
+					MongoRow.INC_ENTRIES_NAME + "." + sanitizedFamilyName + "." + sanitizedColumnName,
+					""
+				);
+			}
+		}
+
+		mongoDB.getCollection(sanitizedTableName).update(
+			query,
+			new BasicDBObject("$unset", unsets)
+		);
 	}
 	
 
@@ -311,14 +382,13 @@ public class MongoStore implements Store, GenericStore
 		String sanitizedRowName = sanitizeName(row);
 		String sanitizedFamilyName = sanitizeName(family);
 
-		DBObject families;
 		boolean ret = false;
 
 		try {
-			families = getFamilies(
-				findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamilyName)
-			);
-			ret = families.containsField(sanitizedFamilyName);
+			DBObject lr = findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamilyName);
+			DBObject families     = getFamilies(lr);
+			DBObject inc_families = getIncFamilies(lr);
+			ret = families.containsField(sanitizedFamilyName) || inc_families.containsField(sanitizedFamilyName);
 		} catch (Exception e) {
 			//throw new DatabaseNotReachedException(e);
 		}
@@ -357,9 +427,11 @@ public class MongoStore implements Store, GenericStore
 			for (String family : families) {
 				String sanitizedFamilyName = sanitizeName(family);
 				keys.put(MongoRow.FAM_ENTRIES_NAME + "." + sanitizedFamilyName, 1);
+				keys.put(MongoRow.INC_ENTRIES_NAME + "." + sanitizedFamilyName, 1);
 			}
 		} else {
             keys.put(MongoRow.FAM_ENTRIES_NAME, 1);
+			keys.put(MongoRow.INC_ENTRIES_NAME, 1);
         }
 		keys.put(MongoRow.ROW_ENTRY_NAME, 1);
 		keys.put("_id", 0);
@@ -390,8 +462,8 @@ public class MongoStore implements Store, GenericStore
 		String sanitizedFamilyName = sanitizeName(family);
 		String sanitizedKeyName = sanitizeName(key);
 
-		byte[] ret;
-		DBObject limitedRow, columns;
+		byte[] ret = null;
+		DBObject limitedRow, columns, inc_columns;
 
 		try {
 			limitedRow = findLimitedRow(
@@ -406,9 +478,21 @@ public class MongoStore implements Store, GenericStore
 				sanitizedFamilyName
 			);
 
-			ret = (byte[])(columns.get(sanitizedKeyName));
+			inc_columns = getColumns(
+				getIncFamilies(limitedRow),
+				sanitizedFamilyName
+			);
+
+			if (columns.containsField(sanitizedFamilyName)) {
+				ret = (byte[])(columns.get(sanitizedKeyName));
+			}
+
+			else if (inc_columns.containsField(sanitizedFamilyName)) {
+				Number n = (Number) inc_columns.get(sanitizedFamilyName);
+				ret = ByteBuffer.allocate(4).putInt(n.intValue()).array();
+			}
+
 		} catch (Exception e) {
-			return null;
 			//throw new DatabaseNotReachedException(e);
 		}
 
@@ -431,7 +515,7 @@ public class MongoStore implements Store, GenericStore
 		String sanitizedRowName = sanitizeName(id);
 		String sanitizedFamilyName = sanitizeName(family);
 		
-		DBObject limitedRow, columns;
+		DBObject limitedRow, columns, inc_columns;
 
 		try {
 			limitedRow = findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamilyName);
@@ -441,10 +525,23 @@ public class MongoStore implements Store, GenericStore
 				sanitizedFamilyName
 			);
 
+			inc_columns = getColumns(
+				getIncFamilies(limitedRow),
+				sanitizedFamilyName
+			);
+
 			for (String key : columns.keySet()) {
 				map.put(
 					dirtyName(key),
 					(byte[])(columns.get(key))
+				);
+			}
+
+			for (String key : inc_columns.keySet()) {
+				Number n = (Number) inc_columns.get(key);
+				map.put(
+					dirtyName(key),
+					ByteBuffer.allocate(4).putInt(n.intValue()).array()
 				);
 			}
 
@@ -471,7 +568,7 @@ public class MongoStore implements Store, GenericStore
 		String sanitizedRowName = sanitizeName(id);
 		String sanitizedFamilyName = sanitizeName(family);
 
-		DBObject limitedRow, columns;
+		DBObject limitedRow, columns, inc_columns;
 		Map<String, byte[]> map = new HashMap();
 
 		try {
@@ -482,21 +579,41 @@ public class MongoStore implements Store, GenericStore
 				sanitizedFamilyName
 			);
 
+			inc_columns = getColumns(
+				getIncFamilies(limitedRow),
+				sanitizedFamilyName
+			);
+
 			if (c != null) {
 				for (String key : columns.keySet()) {
-                    boolean ok1 = true;
-                    boolean ok2 = true;
 					String originalKey = dirtyName(key);
-                    if (c.getStartKey() != null) {
-                        ok1 = originalKey.compareTo(c.getStartKey()) >= 0;
-                    }
-                    if (c.getEndKey() != null) {
-                        ok2 = originalKey.compareTo(c.getEndKey()) <= 0;
-                    }
+					boolean ok1 = (c.getStartKey() != null)
+						? originalKey.compareTo(c.getStartKey()) >= 0
+						: true;
+					boolean ok2 = (c.getEndKey() != null)
+						? originalKey.compareTo(c.getEndKey()) <= 0
+						: true;
 					if (ok1 && ok2) {
 						map.put(
 							originalKey,
 							(byte[])(columns.get(key))
+						);
+					}
+				}
+
+				for (String key : inc_columns.keySet()) {
+					String originalKey = dirtyName(key);
+					boolean ok1 = (c.getStartKey() != null)
+						? originalKey.compareTo(c.getStartKey()) >= 0
+						: true;
+					boolean ok2 = (c.getEndKey() != null)
+						? originalKey.compareTo(c.getEndKey()) <= 0
+						: true;
+					if (ok1 && ok2) {
+						Number n = (Number) inc_columns.get(key);
+						map.put(
+							originalKey,
+							ByteBuffer.allocate(4).putInt(n.intValue()).array()
 						);
 					}
 				}
@@ -507,6 +624,13 @@ public class MongoStore implements Store, GenericStore
 					map.put(
 						dirtyName(key),
 						(byte[])(columns.get(key))
+					);
+				}
+				for (String key : inc_columns.keySet()) {
+					Number n = (Number) inc_columns.get(key);
+					map.put(
+						dirtyName(key),
+						ByteBuffer.allocate(4).putInt(n.intValue()).array()
 					);
 				}
 			}
@@ -534,17 +658,18 @@ public class MongoStore implements Store, GenericStore
         String sanitizedTableName = sanitizeName(table);
 		String sanitizedRowName = sanitizeName(id);
 
-		DBObject limitedRow, fam, columns;
+		DBObject limitedRow, fam, inc_fam, columns;
 
 		try {
 			limitedRow = findLimitedRow(sanitizedTableName, sanitizedRowName);
-			fam = getFamilies(limitedRow);
+			fam     = getFamilies(limitedRow);
+			inc_fam = getIncFamilies(limitedRow);
 
 			for (String family : families) {
 				Map map = new HashMap();
 				String sanitizedFamilyName = sanitizeName(family);
-				columns = getColumns(fam, sanitizedFamilyName);
 
+				columns = getColumns(fam, sanitizedFamilyName);
 				for (String key : columns.keySet()) {
 					map.put(
 						dirtyName(key),
@@ -552,8 +677,18 @@ public class MongoStore implements Store, GenericStore
 					);
 				}
 
+				columns = getColumns(inc_fam, sanitizedFamilyName);
+				for (String key : columns.keySet()) {
+					Number n = (Number) columns.get(key);
+					map.put(
+						dirtyName(key),
+						ByteBuffer.allocate(4).putInt(n.intValue()).array()
+					);
+				}
+
 				mapOfMaps.put(family, map);
 			}
+
 		} catch (Exception e) {
 			return null;
 			//throw new DatabaseNotReachedException(e);
@@ -578,58 +713,18 @@ public class MongoStore implements Store, GenericStore
         String sanitizedTableName = sanitizeName(table);
 		String sanitizedRowName = sanitizeName(id);
 
-		// update
 		if (changed != null) {
 			insert(null, sanitizedTableName, sanitizedRowName, changed);
 		}
 
-		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
-
-		// remove columns
-		if (removed != null) {
-			for (Map.Entry<String, Set<String>> family : removed.entrySet()) {
-				String sanitizedFamilyName = sanitizeName(family.getKey());
-				Set<String> columns = family.getValue();
-
-				DBObject unsets = new BasicDBObject();
-				for (String col: columns) {
-					String sanitizedColumnName = sanitizeName(col);
-					unsets.put(
-						MongoRow.FAM_ENTRIES_NAME + "." + sanitizedFamilyName + "." + sanitizedColumnName,
-						"''"
-					);
-				}
-
-				mongoDB.getCollection(sanitizedTableName).update(
-					query,
-					new BasicDBObject("$unset", unsets)
-				);
-			}
-		}
-
-		// increments
-		/*
 		if (increments != null) {
-			for (Map.Entry<String, Map<String, Number>> family : increments.entrySet()) {
-				String sanitizedFamilyName = sanitizeName(family.getKey());
-				Map<String, Number> columns = family.getValue();
-
-				DBObject incs = new BasicDBObject();
-				for (Map.Entry<String, Number> col : columns.entrySet()) {
-					String sanitizedColumnName = sanitizeName(col.getKey());
-					incs.put(
-						MongoRow.FAM_ENTRIES_NAME + "." + sanitizedFamilyName + "." + sanitizedColumnName,
-						columns.get(col.getValue())
-					);
-				}
-
-				mongoDB.getCollection(sanitizedTableName).update(
-					query,
-					new BasicDBObject("$inc", incs)
-				);
-			}
+			increment(sanitizedTableName, sanitizedRowName, increments);
 		}
-		*/
+
+		if (removed != null) {
+			remove(sanitizedTableName, sanitizedRowName, removed);
+		}
+
 	}
 
 
