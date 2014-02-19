@@ -1,10 +1,7 @@
 package com.googlecode.n_orm.mongo;
 
 import java.nio.ByteBuffer;
-import java.util.Set;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.net.InetAddress;
@@ -36,6 +33,8 @@ public class MongoStore implements Store, GenericStore
 
 	private static String hostname;
 
+	private static Map<Properties, MongoStore> knownStores = new HashMap<Properties, MongoStore>();
+
 	static {
 		/* FIXME: getHostAddress returns wrong IP address...
 		try {
@@ -59,6 +58,50 @@ public class MongoStore implements Store, GenericStore
 
 	private boolean started = false;
 
+	public static MongoStore getStore() {
+		Properties p = new Properties();
+		p.put("address", MONGO_HOST);
+		p.put("port", MONGO_PORT);
+		return getStore(p);
+	}
+
+	public static MongoStore getStore(String addr, short port) {
+		Properties p = new Properties();
+		p.put("address", addr);
+		p.put("port", port);
+		return getStore(p);
+	}
+
+	public static MongoStore getStore(Properties p) {
+		synchronized (MongoStore.class) {
+			MongoStore store = knownStores.get(p);
+
+			if (store == null) {
+				store = new MongoStore();
+			}
+
+			return store;
+		}
+	}
+
+	public MongoStore() {
+		this(MONGO_HOST, MONGO_PORT);
+	}
+
+	public MongoStore(String host) {
+		this(host, MONGO_PORT);
+	}
+
+	public MongoStore(String host, short port) {
+		Properties p = new Properties();
+		p.put("address", host);
+		p.put("port", port);
+
+		setHost(host);
+		setPort(port);
+
+		knownStores.put(p, this);
+	}
 
 	public synchronized void start()
 		throws DatabaseNotReachedException
