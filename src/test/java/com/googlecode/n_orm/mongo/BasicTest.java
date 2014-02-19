@@ -116,7 +116,8 @@ public class BasicTest {
 		assertFalse(store.exists(testTable, "not a valid id","family1"));
 		assertFalse(store.exists(testTable, "123456","not a valid family"));
 	}
-	
+
+	@Ignore
 	@Test
 	public void test10delete() {
 		assertTrue(store.exists(testTable, "300000"));
@@ -154,6 +155,7 @@ public class BasicTest {
 	}
 	
 	@Test
+	@Ignore
 	public void test20removedKeys() {
 		assertEquals("valeur2", new String(store.get(testTable, "123456", "family1", "cle2")));
 		Map<String, Set<String>> toBeDeletedKeysFamilies = new HashMap<String, Set<String>>();
