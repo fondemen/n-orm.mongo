@@ -58,6 +58,8 @@ public class MongoStore implements Store, GenericStore
 
 	private boolean started = false;
 
+	private Map<String, Boolean> hasTableCache = new HashMap<String, Boolean>();
+
 	public static MongoStore getStore() {
 		Properties p = new Properties();
 		p.put("address", MONGO_HOST);
@@ -151,7 +153,7 @@ public class MongoStore implements Store, GenericStore
 	public boolean hasTable(String tableName)
 		throws DatabaseNotReachedException
 	{
-		boolean ret;
+		Boolean ret;
 
         String sanitizedTableName = sanitizeName(tableName);
 
@@ -161,33 +163,16 @@ public class MongoStore implements Store, GenericStore
 		}
 
 		try {
-			//TODO: cache results
-			ret = mongoDB.collectionExists(sanitizedTableName);
+			ret = hasTableCache.get(sanitizedTableName);
+			if (ret == null) {
+				ret = mongoDB.collectionExists(sanitizedTableName);
+				hasTableCache.put(sanitizedTableName, ret);
+			}
 		} catch (Exception e) {
 			throw new DatabaseNotReachedException(e);
 		}
 
-		return ret;
-	}
-
-	protected DBObject findRow(String table, String row)
-		throws DatabaseNotReachedException
-	{
-		if (!hasTable(table)) {
-			return null;
-		}
-
-		DBObject o;
-
-		try {
-			o = mongoDB.getCollection(table).findOne(
-				new BasicDBObject(MongoRow.ROW_ENTRY_NAME, row)
-			);
-		} catch (Exception e) {
-			throw new DatabaseNotReachedException(e);
-		}
-
-		return o;
+		return ret.booleanValue();
 	}
 
 
@@ -321,8 +306,13 @@ public class MongoStore implements Store, GenericStore
 		rowObj.put("$set", query); // ensure the row exists
 		rowObj.put("$set", new BasicDBObject(MongoRow.FAM_ENTRIES_NAME, familiesList));   // replace columns contents
 
-		DBCollection col = mongoDB.getCollection(sanitizedTableName);
-		col.update(query, rowObj, true, false);
+		try {
+			DBCollection col = mongoDB.getCollection(sanitizedTableName);
+			col.update(query, rowObj, true, false);
+			hasTableCache.put(sanitizedTableName, true);
+		} catch (MongoException e) {
+			throw new DatabaseNotReachedException(e);
+		}
 	}
 
 	public void increment(String table, String row, Map<String, Map<String, Number>> increments) {
@@ -351,8 +341,13 @@ public class MongoStore implements Store, GenericStore
 		rowObj.put("$set", query);
 		rowObj.put("$inc", incs);
 
-		DBCollection col = mongoDB.getCollection(sanitizedTableName);
-		col.update(query, rowObj, true, false);
+		try {
+			DBCollection col = mongoDB.getCollection(sanitizedTableName);
+			col.update(query, rowObj, true, false);
+			hasTableCache.put(sanitizedTableName, true);
+		} catch (MongoException e) {
+			throw new DatabaseNotReachedException(e);
+		}
 	}
 
 	public void remove(String table, String row, Map<String, Set<String>> removed) {
@@ -380,10 +375,14 @@ public class MongoStore implements Store, GenericStore
 			}
 		}
 
-		mongoDB.getCollection(sanitizedTableName).update(
-			query,
-			new BasicDBObject("$unset", unsets)
-		);
+		try {
+			mongoDB.getCollection(sanitizedTableName).update(
+				query,
+				new BasicDBObject("$unset", unsets)
+			);
+		} catch (MongoException e) {
+			throw new DatabaseNotReachedException(e);
+		}
 	}
 	
 
@@ -481,7 +480,12 @@ public class MongoStore implements Store, GenericStore
 		mastoQuery.put("$limit",   Integer.toString(limit));
 		mastoQuery.put("$orderby", new BasicDBObject(MongoRow.ROW_ENTRY_NAME, 1));
 
-		DBCursor cur = mongoDB.getCollection(sanitizedTableName).find(mastoQuery, keys);
+		DBCursor cur;
+		try {
+			cur = mongoDB.getCollection(sanitizedTableName).find(mastoQuery, keys);
+		} catch (MongoException e) {
+			throw new DatabaseNotReachedException(e);
+		}
 
 		return new CloseableIterator(cur);
 	}
@@ -810,6 +814,7 @@ public class MongoStore implements Store, GenericStore
 
 		try {
 			mongoDB.getCollection(sanitizedTableName).drop();
+			hasTableCache.put(sanitizedTableName, false);
 		} catch (Exception e) {
 			throw new DatabaseNotReachedException(e);
 		}
