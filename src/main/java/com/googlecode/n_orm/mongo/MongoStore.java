@@ -67,6 +67,13 @@ public class MongoStore implements Store, GenericStore
 		return getStore(p);
 	}
 
+	public static MongoStore getStore(String addr) {
+		Properties p = new Properties();
+		p.put("address", addr);
+		p.put("port", MONGO_PORT);
+		return getStore(p);
+	}
+
 	public static MongoStore getStore(String addr, short port) {
 		Properties p = new Properties();
 		p.put("address", addr);
@@ -79,7 +86,7 @@ public class MongoStore implements Store, GenericStore
 			MongoStore store = knownStores.get(p);
 
 			if (store == null) {
-				store = new MongoStore();
+				store = new MongoStore((String) p.get("address"), (Short) p.get("port"));
 			}
 
 			return store;
