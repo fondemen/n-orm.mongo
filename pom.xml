@@ -8,9 +8,8 @@
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>mongo</artifactId>
-	<groupId>com.googlecode.n_orm.mongo</groupId>
+	<groupId>com.googlecode.n_orm</groupId>
 	<name>mongoDB driver for n-orm</name>
-	<version>0.1</version>
 	<packaging>jar</packaging>
 
 	<scm>
