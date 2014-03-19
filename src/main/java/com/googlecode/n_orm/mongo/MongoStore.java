@@ -174,6 +174,7 @@ public class MongoStore implements Store, GenericStore
 			if (ret == null) {
 				ret = mongoDB.collectionExists(sanitizedTableName);
 				hasTableCache.put(sanitizedTableName, ret);
+				
 			}
 		} catch (Exception e) {
 			throw new DatabaseNotReachedException(e);
@@ -315,8 +316,14 @@ public class MongoStore implements Store, GenericStore
 
 		try {
 			DBCollection col = mongoDB.getCollection(sanitizedTableName);
+			if (hasTableCache.put(sanitizedTableName, true) == null) {
+				DBObject idx = new BasicDBObject();
+				idx.put(MongoRow.ROW_ENTRY_NAME, 1);
+				DBObject idxOpts = new BasicDBObject();
+				idxOpts.put("unique", true);
+				col.ensureIndex(idx, idxOpts);
+			}
 			col.update(query, rowObj, true, false);
-			hasTableCache.put(sanitizedTableName, true);
 		} catch (MongoException e) {
 			throw new DatabaseNotReachedException(e);
 		}
@@ -837,6 +844,10 @@ public class MongoStore implements Store, GenericStore
 	{
 		if (started) return;
 		this.port = port;
+	}
+	
+	public void setDb(String dbname) {
+		this.setDB(db);
 	}
 
 	public void setDB(String dbname)
