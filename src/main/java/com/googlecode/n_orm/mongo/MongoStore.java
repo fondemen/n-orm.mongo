@@ -153,6 +153,10 @@ public class MongoStore implements Store, GenericStore
         started = true;
 	}
 
+    protected String sanitizeTableName(String name) {
+        return name.replace('$', '_').replace('$', '_');
+    }
+
     protected String sanitizeName(String name) {
         return MongoNameSanitizer.sanitize(name);
     }
@@ -166,7 +170,7 @@ public class MongoStore implements Store, GenericStore
 	{
 		Boolean ret;
 
-        String sanitizedTableName = sanitizeName(tableName);
+        String sanitizedTableName = sanitizeTableName(tableName);
 
 		if (!started) {
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
@@ -272,7 +276,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(id);
 
 		try {
@@ -320,7 +324,7 @@ public class MongoStore implements Store, GenericStore
 	public void insert(
 			MetaInformation meta, String table, String row, ColumnFamilyData data
 	) throws DatabaseNotReachedException {
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
         MSQuery q = createQuery(sanitizedTableName, sanitizedRowName);
 		enrichQueryWithInsert(meta, q, sanitizedTableName, sanitizedRowName, data);
@@ -356,7 +360,7 @@ public class MongoStore implements Store, GenericStore
 	}
 
 	public void increment(String table, String row, Map<String, Map<String, Number>> increments) {
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
         MSQuery q = createQuery(sanitizedTableName, sanitizedRowName);
         enrichQueryWithIncrement(q, sanitizedTableName, sanitizedRowName, increments);
@@ -388,7 +392,7 @@ public class MongoStore implements Store, GenericStore
 	}
 	
 	public void remove(String table, String row, Map<String, Set<String>> removed) {
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
         MSQuery q = createQuery(sanitizedTableName, sanitizedRowName);
         enrichQueryWithRemove(q, sanitizedTableName, sanitizedRowName, removed);
@@ -431,7 +435,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
 
 		long count = 0;
@@ -457,7 +461,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
 		String sanitizedFamilyName = sanitizeName(family);
 
@@ -486,7 +490,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 
 		DBObject query = new BasicDBObject();
 		if (c != null) {
@@ -538,7 +542,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
 		String sanitizedFamilyName = sanitizeName(family);
 		String sanitizedKeyName = sanitizeName(key);
@@ -592,7 +596,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(id);
 		String sanitizedFamilyName = sanitizeName(family);
 		
@@ -645,7 +649,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(id);
 		String sanitizedFamilyName = sanitizeName(family);
 
@@ -736,7 +740,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(id);
 
 		DBObject limitedRow, fam, inc_fam, columns;
@@ -791,7 +795,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(id);
         MSQuery q = createQuery(sanitizedTableName, sanitizedRowName);
 
@@ -812,7 +816,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 
 		long cnt = 0;
 
@@ -842,7 +846,7 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException("Store not started");
 		}
 
-        String sanitizedTableName = sanitizeName(table);
+        String sanitizedTableName = sanitizeTableName(table);
 
 		try {
 			mongoDB.getCollection(sanitizedTableName).drop();
