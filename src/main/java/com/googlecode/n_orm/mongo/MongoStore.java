@@ -2,12 +2,12 @@ package com.googlecode.n_orm.mongo;
 
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.net.InetAddress;
 
 import com.googlecode.n_orm.DatabaseNotReachedException;
-
 import com.googlecode.n_orm.storeapi.Store;
 import com.googlecode.n_orm.storeapi.Constraint;
 import com.googlecode.n_orm.storeapi.GenericStore;
@@ -15,7 +15,6 @@ import com.googlecode.n_orm.storeapi.MetaInformation;
 import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
 import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
 import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
-
 import com.mongodb.DB;
 import com.mongodb.DBObject;
 import com.mongodb.DBCursor;
@@ -33,7 +32,7 @@ public class MongoStore implements Store, GenericStore
 
 	private static String hostname;
 
-	private static Map<Properties, MongoStore> knownStores = new HashMap<Properties, MongoStore>();
+	private static Map<Properties, MongoStore> knownStores = new ConcurrentHashMap<Properties, MongoStore>();
 
 	static {
 		/* FIXME: getHostAddress returns wrong IP address...
@@ -47,6 +46,11 @@ public class MongoStore implements Store, GenericStore
 			hostname = MONGO_HOST;
 		}
 		*/
+	}
+	
+	private static class MSQuery {
+		DBObject query;
+		DBObject rowObj;
 	}
 
 	private DB mongoDB;
@@ -279,41 +283,25 @@ public class MongoStore implements Store, GenericStore
 			throw new DatabaseNotReachedException(e);
 		}
 	}
-
-
-	public void insert(
-			MetaInformation meta, String table, String row, ColumnFamilyData data
-	) throws DatabaseNotReachedException
-	{
+	
+	private MSQuery createQuery(String sanitizedTableName, String sanitizedRowName) {
 		if (!started) {
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
 			throw new DatabaseNotReachedException("Store not started");
 		}
-
-        String sanitizedTableName = sanitizeName(table);
-		String sanitizedRowName = sanitizeName(row);
-
-		DBObject familiesList = new BasicDBObject();
-		for (Map.Entry<String, Map<String, byte[]>> family : data.entrySet()) {
-			String sanitizedFamilyName = sanitizeName(family.getKey());
-
-			DBObject columnsObj = new BasicDBObject();
-			for (Map.Entry<String, byte[]> column : family.getValue().entrySet()) {
-				String sanitizedColumnName = sanitizeName(column.getKey());
-				columnsObj.put(
-					sanitizedColumnName, column.getValue()
-				);
-			}
-
-			familiesList.put(sanitizedFamilyName, columnsObj);
-		}
-
+		
 		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
-
 		DBObject rowObj = new BasicDBObject();
 		rowObj.put("$set", query); // ensure the row exists
-		rowObj.put("$set", new BasicDBObject(MongoRow.FAM_ENTRIES_NAME, familiesList));   // replace columns contents
-
+		
+		MSQuery q = new MSQuery();
+		q.query = query;
+		q.rowObj = rowObj;
+		
+		return q;
+	}
+	
+	private void runQuery(MSQuery q, String sanitizedTableName) {
 		try {
 			DBCollection col = mongoDB.getCollection(sanitizedTableName);
 			if (hasTableCache.put(sanitizedTableName, true) == null) {
@@ -323,19 +311,64 @@ public class MongoStore implements Store, GenericStore
 				idxOpts.put("unique", true);
 				col.ensureIndex(idx, idxOpts);
 			}
-			col.update(query, rowObj, true, false);
+			col.update(q.query, q.rowObj, true, false);
 		} catch (MongoException e) {
 			throw new DatabaseNotReachedException(e);
 		}
 	}
 
-	public void increment(String table, String row, Map<String, Map<String, Number>> increments) {
-
-		String sanitizedTableName = sanitizeName(table);
+	public void insert(
+			MetaInformation meta, String table, String row, ColumnFamilyData data
+	) throws DatabaseNotReachedException {
+        String sanitizedTableName = sanitizeName(table);
 		String sanitizedRowName = sanitizeName(row);
+        MSQuery q = createQuery(sanitizedTableName, sanitizedRowName);
+		enrichQueryWithInsert(meta, q, sanitizedTableName, sanitizedRowName, data);
+		runQuery(q, sanitizedTableName);
+	}
 
+	public void enrichQueryWithInsert(
+			MetaInformation meta, MSQuery q, String sanitizedTableName, String sanitizedRowName, ColumnFamilyData data
+	) throws DatabaseNotReachedException
+	{
+		if (data == null || data.isEmpty()) {
+			return;
+		}
+		
+		DBObject sets  = new BasicDBObject();
+
+		for (Map.Entry<String, Map<String, byte[]>> family : data.entrySet()) {
+			String sanitizedFamilyName = sanitizeName(family.getKey());
+			Map<String, byte[]> columns = family.getValue();
+
+			for (Map.Entry<String, byte[]> col : columns.entrySet()) {
+				String sanitizedColumnName = sanitizeName(col.getKey());
+				sets.put(
+					MongoRow.FAM_ENTRIES_NAME + "." + sanitizedFamilyName + "." + sanitizedColumnName,
+					col.getValue()
+				);
+			}
+
+		}
+
+		q.rowObj.put("$set", sets);
+		
+	}
+
+	public void increment(String table, String row, Map<String, Map<String, Number>> increments) {
+        String sanitizedTableName = sanitizeName(table);
+		String sanitizedRowName = sanitizeName(row);
+        MSQuery q = createQuery(sanitizedTableName, sanitizedRowName);
+        enrichQueryWithIncrement(q, sanitizedTableName, sanitizedRowName, increments);
+		runQuery(q, sanitizedTableName);
+	}
+
+	public void enrichQueryWithIncrement(MSQuery q, String sanitizedTableName, String sanitizedRowName, Map<String, Map<String, Number>> increments) {
+		if (increments == null || increments.isEmpty()) {
+			return;
+		}
+		
 		DBObject incs  = new BasicDBObject();
-		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
 
 		for (Map.Entry<String, Map<String, Number>> family : increments.entrySet()) {
 			String sanitizedFamilyName = sanitizeName(family.getKey());
@@ -351,26 +384,23 @@ public class MongoStore implements Store, GenericStore
 
 		}
 
-		DBObject rowObj = new BasicDBObject();
-		rowObj.put("$set", query);
-		rowObj.put("$inc", incs);
-
-		try {
-			DBCollection col = mongoDB.getCollection(sanitizedTableName);
-			col.update(query, rowObj, true, false);
-			hasTableCache.put(sanitizedTableName, true);
-		} catch (MongoException e) {
-			throw new DatabaseNotReachedException(e);
-		}
+		q.rowObj.put("$inc", incs);
+	}
+	
+	public void remove(String table, String row, Map<String, Set<String>> removed) {
+        String sanitizedTableName = sanitizeName(table);
+		String sanitizedRowName = sanitizeName(row);
+        MSQuery q = createQuery(sanitizedTableName, sanitizedRowName);
+        enrichQueryWithRemove(q, sanitizedTableName, sanitizedRowName, removed);
+		runQuery(q, sanitizedTableName);
 	}
 
-	public void remove(String table, String row, Map<String, Set<String>> removed) {
+	public void enrichQueryWithRemove(MSQuery q, String sanitizedTableName, String sanitizedRowName, Map<String, Set<String>> removed) {
 
-		String sanitizedRowName   = sanitizeName(row);
-		String sanitizedTableName = sanitizeName(table);
-
+		if (removed == null || removed.isEmpty())
+			return;
+		
 		DBObject unsets = new BasicDBObject();
-		DBObject query  = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
 
 		for (Map.Entry<String, Set<String>> family : removed.entrySet()) {
 			String sanitizedFamilyName = sanitizeName(family.getKey());
@@ -388,15 +418,8 @@ public class MongoStore implements Store, GenericStore
 				);
 			}
 		}
-
-		try {
-			mongoDB.getCollection(sanitizedTableName).update(
-				query,
-				new BasicDBObject("$unset", unsets)
-			);
-		} catch (MongoException e) {
-			throw new DatabaseNotReachedException(e);
-		}
+		
+		q.rowObj.put("$unset", unsets);
 	}
 	
 
@@ -562,7 +585,7 @@ public class MongoStore implements Store, GenericStore
 		MetaInformation meta, String table, String id, String family
 	) throws DatabaseNotReachedException
 	{
-		Map<String, byte[]> map = new HashMap();
+		Map<String, byte[]> map = new HashMap<String, byte[]>();
 
 		if (!started) {
 			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
@@ -627,7 +650,7 @@ public class MongoStore implements Store, GenericStore
 		String sanitizedFamilyName = sanitizeName(family);
 
 		DBObject limitedRow, columns, inc_columns;
-		Map<String, byte[]> map = new HashMap();
+		Map<String, byte[]> map = new HashMap<String, byte[]>();
 
 		try {
 			limitedRow = findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamilyName);
@@ -724,7 +747,7 @@ public class MongoStore implements Store, GenericStore
 			inc_fam = getIncFamilies(limitedRow);
 
 			for (String family : families) {
-				Map map = new HashMap();
+				Map<String, byte[]> map = new HashMap<String, byte[]>();
 				String sanitizedFamilyName = sanitizeName(family);
 
 				columns = getColumns(fam, sanitizedFamilyName);
@@ -770,18 +793,13 @@ public class MongoStore implements Store, GenericStore
 
         String sanitizedTableName = sanitizeName(table);
 		String sanitizedRowName = sanitizeName(id);
+        MSQuery q = createQuery(sanitizedTableName, sanitizedRowName);
 
-		if (changed != null) {
-			insert(null, sanitizedTableName, sanitizedRowName, changed);
-		}
+		enrichQueryWithInsert(meta, q, sanitizedTableName, sanitizedRowName, changed);
+		enrichQueryWithIncrement(q, sanitizedTableName, sanitizedRowName, increments);
+		enrichQueryWithRemove(q, sanitizedTableName, sanitizedRowName, removed);
 
-		if (increments != null) {
-			increment(sanitizedTableName, sanitizedRowName, increments);
-		}
-
-		if (removed != null) {
-			remove(sanitizedTableName, sanitizedRowName, removed);
-		}
+		runQuery(q, sanitizedTableName);
 
 	}
 
