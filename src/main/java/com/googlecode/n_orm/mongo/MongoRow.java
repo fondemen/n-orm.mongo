@@ -4,9 +4,9 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.HashMap;
 
+import com.googlecode.n_orm.conversion.ConversionTools;
 import com.googlecode.n_orm.storeapi.Row;
 import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
-
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
@@ -42,7 +42,7 @@ class MongoRow implements Row {
 			for (String k : columns.keySet()) {
 				map.put(
 					MongoNameSanitizer.dirty(k),
-					(byte[])(columns.get(k))
+					ConversionTools.convert(columns.get(k))
 				);
 			}
 
