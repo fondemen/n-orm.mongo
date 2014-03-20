@@ -8,8 +8,8 @@ public class MongoNameSanitizer {
 	public static String sanitize(String name) {
 		String sanitizedName = name;
 		if (name != null) {
-			sanitizedName = sanitizedName.replace("$", "_SsJu2_");
-			sanitizedName = sanitizedName.replace(".", "_NtVrM_");
+			sanitizedName = sanitizedName.replace('$', '\uFF04');
+			sanitizedName = sanitizedName.replace('.', '\uFF0E');
 		}
 		return sanitizedName;
 	}
@@ -17,8 +17,8 @@ public class MongoNameSanitizer {
 	public static String dirty(String name) {
 		String dirtiedName = name;
 		if (name != null) {
-			dirtiedName = dirtiedName.replace("_SsJu2_", "$");
-			dirtiedName = dirtiedName.replace("_NtVrM_", ".");
+			dirtiedName = dirtiedName.replace('\uFF04', '$');
+			dirtiedName = dirtiedName.replace('\uFF0E', '.');
 		}
 		return dirtiedName;
 	}
