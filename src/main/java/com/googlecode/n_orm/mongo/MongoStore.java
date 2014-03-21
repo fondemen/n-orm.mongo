@@ -1,32 +1,34 @@
 package com.googlecode.n_orm.mongo;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.TypeVariable;
-import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.net.InetAddress;
 
 import com.googlecode.n_orm.DatabaseNotReachedException;
 import com.googlecode.n_orm.PersistingElement;
 import com.googlecode.n_orm.cf.ColumnFamily;
-import com.googlecode.n_orm.cf.MapColumnFamily;
-import com.googlecode.n_orm.cf.SetColumnFamily;
 import com.googlecode.n_orm.conversion.ConversionTools;
-import com.googlecode.n_orm.storeapi.Store;
+import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 import com.googlecode.n_orm.storeapi.Constraint;
+import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
 import com.googlecode.n_orm.storeapi.GenericStore;
 import com.googlecode.n_orm.storeapi.MetaInformation;
 import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
-import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
-import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
-import com.mongodb.DB;
-import com.mongodb.DBObject;
-import com.mongodb.DBCursor;
+import com.googlecode.n_orm.storeapi.Store;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
 import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 
@@ -36,11 +38,13 @@ public class MongoStore implements Store, GenericStore
 	private static String DB_NAME    = "n_orm";
 	private static short  MONGO_PORT =  27017;
 	private static String MONGO_HOST = "localhost";
+	
+	private static final Set<Class<?>> SIMPLE_TYPES;
 
 	private static String hostname;
 
 	private static Map<Properties, MongoStore> knownStores = new ConcurrentHashMap<Properties, MongoStore>();
-
+	
 	static {
 		/* FIXME: getHostAddress returns wrong IP address...
 		try {
@@ -53,6 +57,25 @@ public class MongoStore implements Store, GenericStore
 			hostname = MONGO_HOST;
 		}
 		*/
+		
+		Set<Class<?>> simpleClasses = new HashSet<Class<?>>();
+		simpleClasses.add(Boolean.class);
+		simpleClasses.add(String.class);
+		simpleClasses.add(long.class);
+		simpleClasses.add(Long.class);
+		simpleClasses.add(int.class);
+		simpleClasses.add(Integer.class);
+		simpleClasses.add(short.class);
+		simpleClasses.add(Short.class);
+		simpleClasses.add(byte.class);
+		simpleClasses.add(Byte.class);
+//		simpleClasses.add(double.class);
+//		simpleClasses.add(Double.class);
+//		simpleClasses.add(float.class);
+//		simpleClasses.add(Float.class);
+		simpleClasses.add(Date.class);
+		
+		SIMPLE_TYPES = Collections.unmodifiableSet(simpleClasses);
 	}
 	
 	private static class MSQuery {
@@ -67,7 +90,7 @@ public class MongoStore implements Store, GenericStore
 	private String host = hostname;
 	private String db   = DB_NAME;
 
-	private boolean started = false;
+	private volatile boolean started = false;
 
 	private Map<String, Boolean> hasTableCache = new HashMap<String, Boolean>();
 
@@ -202,39 +225,62 @@ public class MongoStore implements Store, GenericStore
 	protected DBObject findLimitedRow(String table, String row)
 		throws DatabaseNotReachedException
 	{
-		return findLimitedRow(table, row, null, null);
+		return findLimitedRow(table, row, new TreeSet<String>(), null);
+	}
+
+
+	protected DBObject findLimitedRow(String table, String row, Set<String> families)
+		throws DatabaseNotReachedException
+	{
+		return findLimitedRow(table, row, families, null);
 	}
 
 
 	protected DBObject findLimitedRow(String table, String row, String family)
 		throws DatabaseNotReachedException
 	{
-		return findLimitedRow(table, row, family, null);
+		Set<String> families = new TreeSet<String>();
+		families.add(family);
+		return findLimitedRow(table, row, families);
+	}
+
+
+	protected DBObject findLimitedRow(String table, String row, String family, String column)
+		throws DatabaseNotReachedException
+	{
+		Set<String> families = new TreeSet<String>();
+		families.add(family);
+		return findLimitedRow(table, row, families, column);
 	}
 
 	
 	protected DBObject findLimitedRow(
-		String table, String row, String family, String column
+		String table, String row, Set<String> families, String column
 	) throws DatabaseNotReachedException
 	{
 		if (!hasTable(table)) {
 			return null;
 		}
 
+		assert families != null && !families.isEmpty();
+		assert column != null ? families.size() == 1 : true;
+		
 		DBObject limitedRow;
 		DBObject query = new BasicDBObject();
 		DBObject keys = new BasicDBObject();
 
 		query.put(MongoRow.ROW_ENTRY_NAME, row);
-		if (family != null) {
-			if (column != null) {
-				keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family + "." + column, 1);
-			} else {
-				keys.put(MongoRow.FAM_ENTRIES_NAME + "." + family, 1);
+		
+		for (String family : families) {
+			if (families != null) {
+				if (column != null) {
+					keys.put(family + "." + column, 1);
+				} else {
+					keys.put(family, 1);
+				}
 			}
-		} else {
-			keys.put(MongoRow.FAM_ENTRIES_NAME, 1);
 		}
+		
 		keys.put(MongoRow.ROW_ENTRY_NAME, 1);
 		keys.put("_id", 0);
 
@@ -245,14 +291,6 @@ public class MongoStore implements Store, GenericStore
 		}
 
 		return limitedRow;
-	}
-
-
-	protected DBObject getFamilies(DBObject row)
-		throws DatabaseNotReachedException
-	{
-		DBObject fam = (DBObject) row.get(MongoRow.FAM_ENTRIES_NAME);
-		return (fam != null) ? fam : new BasicDBObject();
 	}
 
 
@@ -292,7 +330,7 @@ public class MongoStore implements Store, GenericStore
 		
 		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
 		DBObject rowObj = new BasicDBObject();
-		rowObj.put("$set", query); // ensure the row exists
+		rowObj.put("$set", new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName)); // ensure the row exists
 		
 		MSQuery q = new MSQuery();
 		q.query = query;
@@ -335,7 +373,8 @@ public class MongoStore implements Store, GenericStore
 			return;
 		}
 		
-		DBObject sets  = new BasicDBObject();
+		DBObject sets = (DBObject) q.rowObj.get("$set");
+		if (sets == null) sets = new BasicDBObject();
 
 		for (Map.Entry<String, Map<String, byte[]>> family : data.entrySet()) {
 			String sanitizedFamilyName = sanitizeName(family.getKey());
@@ -346,10 +385,8 @@ public class MongoStore implements Store, GenericStore
 			boolean isCf = f != null;
 			if (isCf) {
 				ColumnFamily<?> cf = meta.getElement().getColumnFamily(f.getName());
-				if (cf instanceof SetColumnFamily) {
-					clazz = ((SetColumnFamily)cf).getSetElementClazz();
-				} else if (cf instanceof MapColumnFamily) {
-					clazz = ((MapColumnFamily)cf).getClazz();
+				if (cf != null) {
+					clazz = cf.getClazz();
 				} else {
 					clazz = null;
 				}
@@ -369,16 +406,7 @@ public class MongoStore implements Store, GenericStore
 				Object value;
 				if (clazz == null) {
 					value = col.getValue();
-				} else if (	Boolean.class.equals(clazz)
-						|| String.class.equals(clazz)
-						|| long.class.equals(clazz)
-						|| Long.class.equals(clazz)
-						|| int.class.equals(clazz)
-						|| Integer.class.equals(clazz)
-						|| short.class.equals(clazz)
-						|| Short.class.equals(clazz)
-						|| byte.class.equals(clazz)
-						|| Byte.class.equals(clazz)) {
+				} else if (SIMPLE_TYPES.contains(clazz)) {
 					value = ConversionTools.convert(clazz, col.getValue());
 				} else if ( PersistingElement.class.isAssignableFrom(clazz)) {
 					value = ConversionTools.convert(String.class, col.getValue());
@@ -387,7 +415,7 @@ public class MongoStore implements Store, GenericStore
 				}
 				
 				sets.put(
-					MongoRow.FAM_ENTRIES_NAME + "." + sanitizedFamilyName + "." + sanitizedColumnName,
+					sanitizedFamilyName + "." + sanitizedColumnName,
 					value
 				);
 			}
@@ -420,7 +448,7 @@ public class MongoStore implements Store, GenericStore
 			for (Map.Entry<String, Number> col : columns.entrySet()) {
 				String sanitizedColumnName = sanitizeName(col.getKey());
 				incs.put(
-					MongoRow.FAM_ENTRIES_NAME + "." + sanitizedFamilyName + "." + sanitizedColumnName,
+					sanitizedFamilyName + "." + sanitizedColumnName,
 					col.getValue()
 				);
 			}
@@ -452,7 +480,7 @@ public class MongoStore implements Store, GenericStore
 			for (String col: columns) {
 				String sanitizedColumnName = sanitizeName(col);
 				unsets.put(
-					MongoRow.FAM_ENTRIES_NAME + "." + sanitizedFamilyName + "." + sanitizedColumnName,
+					sanitizedFamilyName + "." + sanitizedColumnName,
 					""
 				);
 			}
@@ -473,20 +501,27 @@ public class MongoStore implements Store, GenericStore
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
 
-		long count = 0;
+		DBObject found = null;
 		
 		try {
-			count = mongoDB.getCollection(sanitizedTableName).getCount(
-				new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName)
-			);
+			DBObject query = new BasicDBObject();
+			DBObject keys = new BasicDBObject();
+
+			query.put(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
+			
+			keys.put(MongoRow.ROW_ENTRY_NAME, 1);
+			keys.put("_id", 0);
+			
+			found = mongoDB.getCollection(sanitizedTableName).findOne(query, keys);
 		} catch (Exception e) {
 			//throw new DatabaseNotReachedException(e);
 		}
 
-		return count > 0;
+		return found != null;
 	}
 
 
+	// TODO: loads the complete family just to test whether an element exists !!!
 	public boolean exists(
 		MetaInformation meta, String table, String row, String family
 	) throws DatabaseNotReachedException
@@ -499,18 +534,25 @@ public class MongoStore implements Store, GenericStore
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
 		String sanitizedFamilyName = sanitizeName(family);
+		
+		DBObject found = null;
+		DBObject query = new BasicDBObject();
+		DBObject keys = new BasicDBObject();
 
-		boolean ret = false;
+		query.put(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
+		query.put(sanitizedFamilyName, new BasicDBObject("$type", 3));
+		query.put("$where", "Object.keys(this." + sanitizedFamilyName + ").length > 0");
+		
+		keys.put(MongoRow.ROW_ENTRY_NAME, 1);
+		keys.put("_id", 0);
 
 		try {
-			DBObject lr = findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamilyName);
-			DBObject families     = getFamilies(lr);
-			ret = families.containsField(sanitizedFamilyName);
+			found = mongoDB.getCollection(sanitizedTableName).findOne(query, keys);
 		} catch (Exception e) {
 			//throw new DatabaseNotReachedException(e);
 		}
-
-		return ret;
+		
+		return found != null;
 	}
 
 
@@ -540,11 +582,9 @@ public class MongoStore implements Store, GenericStore
 		if (families != null) {
 			for (String family : families) {
 				String sanitizedFamilyName = sanitizeName(family);
-				keys.put(MongoRow.FAM_ENTRIES_NAME + "." + sanitizedFamilyName, 1);
+				keys.put(sanitizedFamilyName, 1);
 			}
-		} else {
-            keys.put(MongoRow.FAM_ENTRIES_NAME, 1);
-        }
+		}
 		keys.put(MongoRow.ROW_ENTRY_NAME, 1);
 		keys.put("_id", 0);
 
@@ -580,7 +620,7 @@ public class MongoStore implements Store, GenericStore
 		String sanitizedKeyName = sanitizeName(key);
 
 		byte[] ret = null;
-		DBObject limitedRow, columns, inc_columns;
+		DBObject limitedRow, columns;
 
 		try {
 			limitedRow = findLimitedRow(
@@ -591,7 +631,7 @@ public class MongoStore implements Store, GenericStore
 			);
 
 			columns = getColumns(
-				getFamilies(limitedRow),
+				limitedRow,
 				sanitizedFamilyName
 			);
 
@@ -628,7 +668,7 @@ public class MongoStore implements Store, GenericStore
 			limitedRow = findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamilyName);
 
 			columns = getColumns(
-				getFamilies(limitedRow),
+				limitedRow,
 				sanitizedFamilyName
 			);
 
@@ -669,7 +709,7 @@ public class MongoStore implements Store, GenericStore
 			limitedRow = findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamilyName);
 
 			columns = getColumns(
-				getFamilies(limitedRow),
+				limitedRow,
 				sanitizedFamilyName
 			);
 
@@ -722,18 +762,21 @@ public class MongoStore implements Store, GenericStore
 
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(id);
+		Set<String> sanitizedFamiliesNames = new TreeSet<String>();
+		for (String family : families) {
+			sanitizedFamiliesNames.add(this.sanitizeName(family));
+		}
 
-		DBObject limitedRow, fam, inc_fam, columns;
+		DBObject limitedRow, columns;
 
 		try {
-			limitedRow = findLimitedRow(sanitizedTableName, sanitizedRowName);
-			fam     = getFamilies(limitedRow);
+			limitedRow = findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamiliesNames);
 
 			for (String family : families) {
 				Map<String, byte[]> map = new HashMap<String, byte[]>();
 				String sanitizedFamilyName = sanitizeName(family);
 
-				columns = getColumns(fam, sanitizedFamilyName);
+				columns = getColumns(limitedRow, sanitizedFamilyName);
 				for (String key : columns.keySet()) {
 					map.put(
 						dirtyName(key),
@@ -851,7 +894,7 @@ public class MongoStore implements Store, GenericStore
 		}
 	}
 
-	public void close()
+	public synchronized void close()
 		throws DatabaseNotReachedException
 	{
 		if (!started) {
