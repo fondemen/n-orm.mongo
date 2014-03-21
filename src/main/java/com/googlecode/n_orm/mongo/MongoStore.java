@@ -184,7 +184,7 @@ public class MongoStore implements Store, GenericStore
 	}
 
     protected String sanitizeTableName(String name) {
-        return name.replace('$', '_').replace('$', '_');
+        return name.replace('$', '_');
     }
 
     protected String sanitizeName(String name) {
@@ -406,10 +406,10 @@ public class MongoStore implements Store, GenericStore
 				Object value;
 				if (clazz == null) {
 					value = col.getValue();
-				} else if (SIMPLE_TYPES.contains(clazz)) {
-					value = ConversionTools.convert(clazz, col.getValue());
 				} else if ( PersistingElement.class.isAssignableFrom(clazz)) {
 					value = ConversionTools.convert(String.class, col.getValue());
+				} else if (SIMPLE_TYPES.contains(clazz)) {
+					value = ConversionTools.convert(clazz, col.getValue());
 				} else {
 					value = col.getValue();
 				}
@@ -439,7 +439,8 @@ public class MongoStore implements Store, GenericStore
 			return;
 		}
 		
-		DBObject incs  = new BasicDBObject();
+		DBObject incs = (DBObject) q.rowObj.get("$inc");
+		if (incs == null) incs = new BasicDBObject();
 
 		for (Map.Entry<String, Map<String, Number>> family : increments.entrySet()) {
 			String sanitizedFamilyName = sanitizeName(family.getKey());
@@ -514,14 +515,13 @@ public class MongoStore implements Store, GenericStore
 			
 			found = mongoDB.getCollection(sanitizedTableName).findOne(query, keys);
 		} catch (Exception e) {
-			//throw new DatabaseNotReachedException(e);
+			throw new DatabaseNotReachedException(e);
 		}
 
 		return found != null;
 	}
 
 
-	// TODO: loads the complete family just to test whether an element exists !!!
 	public boolean exists(
 		MetaInformation meta, String table, String row, String family
 	) throws DatabaseNotReachedException
@@ -549,7 +549,7 @@ public class MongoStore implements Store, GenericStore
 		try {
 			found = mongoDB.getCollection(sanitizedTableName).findOne(query, keys);
 		} catch (Exception e) {
-			//throw new DatabaseNotReachedException(e);
+			throw new DatabaseNotReachedException(e);
 		}
 		
 		return found != null;
@@ -568,14 +568,22 @@ public class MongoStore implements Store, GenericStore
 
         String sanitizedTableName = sanitizeTableName(table);
 
-		DBObject query = new BasicDBObject();
+		DBObject query = null;
 		if (c != null) {
-			query.put(
-                "$where",
-                "this." + MongoRow.ROW_ENTRY_NAME + " >= '" + sanitizeName(c.getStartKey()) + "'"
-                + " && " +
-                "this." + MongoRow.ROW_ENTRY_NAME + " <= '" + sanitizeName(c.getEndKey())   + "'"
-			);
+			DBObject startCond = c.getStartKey() == null ? null : new BasicDBObject(MongoRow.ROW_ENTRY_NAME,
+					new BasicDBObject("$gte", sanitizeName(c.getStartKey())));
+			DBObject endCond = c.getEndKey() == null ? null : new BasicDBObject(MongoRow.ROW_ENTRY_NAME,
+					new BasicDBObject("$lte", sanitizeName(c.getEndKey())));
+			
+			if (startCond != null) {
+				if (endCond != null) {
+					query = new BasicDBObject("$and", new Object[] {startCond, endCond});
+				} else {
+					query = startCond;
+				}
+			} else if (endCond != null) {
+				query = endCond;
+			}
 		}
 
 		DBObject keys = new BasicDBObject();
@@ -589,7 +597,7 @@ public class MongoStore implements Store, GenericStore
 		keys.put("_id", 0);
 
 		BasicDBObject mastoQuery = new BasicDBObject();
-		mastoQuery.put("$query",   query);
+		mastoQuery.put("$query",   query == null ? new BasicDBObject() : query);
 		mastoQuery.put("$limit",   Integer.toString(limit));
 		mastoQuery.put("$orderby", new BasicDBObject(MongoRow.ROW_ENTRY_NAME, 1));
 
@@ -640,7 +648,7 @@ public class MongoStore implements Store, GenericStore
 			}
 
 		} catch (Exception e) {
-			//throw new DatabaseNotReachedException(e);
+			throw new DatabaseNotReachedException(e);
 		}
 
 		return ret;
@@ -662,7 +670,7 @@ public class MongoStore implements Store, GenericStore
 		String sanitizedRowName = sanitizeName(id);
 		String sanitizedFamilyName = sanitizeName(family);
 		
-		DBObject limitedRow, columns, inc_columns;
+		DBObject limitedRow, columns;
 
 		try {
 			limitedRow = findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamilyName);
@@ -680,8 +688,7 @@ public class MongoStore implements Store, GenericStore
 			}
 
 		} catch (Exception e) {
-			return null;
-			//throw new DatabaseNotReachedException(e);
+			throw new DatabaseNotReachedException(e);
 		}
 
 		return map;
@@ -702,7 +709,7 @@ public class MongoStore implements Store, GenericStore
 		String sanitizedRowName = sanitizeName(id);
 		String sanitizedFamilyName = sanitizeName(family);
 
-		DBObject limitedRow, columns, inc_columns;
+		DBObject limitedRow, columns;
 		Map<String, byte[]> map = new HashMap<String, byte[]>();
 
 		try {
@@ -833,20 +840,28 @@ public class MongoStore implements Store, GenericStore
 
 		long cnt = 0;
 
-		DBObject query = new BasicDBObject();
-
+		DBObject query = null;
 		if (c != null) {
-			query.put(
-				"$where",
-				"this." + MongoRow.ROW_ENTRY_NAME + " >= '" + sanitizeName(c.getStartKey()) + "'"
-				+ " && " +
-				"this." + MongoRow.ROW_ENTRY_NAME + " <= '" + sanitizeName(c.getEndKey())  + "'"
-			);
+			DBObject startCond = c.getStartKey() == null ? null : new BasicDBObject(MongoRow.ROW_ENTRY_NAME,
+					new BasicDBObject("$gte", sanitizeName(c.getStartKey())));
+			DBObject endCond = c.getEndKey() == null ? null : new BasicDBObject(MongoRow.ROW_ENTRY_NAME,
+					new BasicDBObject("$lte", sanitizeName(c.getEndKey())));
+			
+			if (startCond != null) {
+				if (endCond != null) {
+					query = new BasicDBObject("$and", new Object[] {startCond, endCond});
+				} else {
+					query = startCond;
+				}
+			} else if (endCond != null) {
+				query = endCond;
+			}
 		}
 
 		try {
-			cnt = mongoDB.getCollection(sanitizedTableName).count(query);
+			cnt = mongoDB.getCollection(sanitizedTableName).count(query == null ? new BasicDBObject() : query);
 		} catch (Exception e) {
+			throw new DatabaseNotReachedException(e);
 		}
 
 		return cnt;
