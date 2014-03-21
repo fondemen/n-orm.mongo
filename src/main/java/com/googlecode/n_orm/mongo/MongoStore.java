@@ -282,7 +282,6 @@ public class MongoStore implements Store, GenericStore
 		}
 		
 		keys.put(MongoRow.ROW_ENTRY_NAME, 1);
-		keys.put("_id", 0);
 
 		try {
 			limitedRow = mongoDB.getCollection(table).findOne(query, keys);
@@ -330,7 +329,7 @@ public class MongoStore implements Store, GenericStore
 		
 		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
 		DBObject rowObj = new BasicDBObject();
-		rowObj.put("$set", new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName)); // ensure the row exists
+		rowObj.put("$set", new BasicDBObject(MongoRow.ROW_ENTRY_EXISTS, true)); // ensure the row exists
 		
 		MSQuery q = new MSQuery();
 		q.query = query;
@@ -342,7 +341,7 @@ public class MongoStore implements Store, GenericStore
 	private void runQuery(MSQuery q, String sanitizedTableName) {
 		try {
 			DBCollection col = mongoDB.getCollection(sanitizedTableName);
-			if (hasTableCache.put(sanitizedTableName, true) == null) {
+			if (hasTableCache.put(sanitizedTableName, true) == null && !"_id".equals(MongoRow.ROW_ENTRY_NAME)) {
 				DBObject idx = new BasicDBObject();
 				idx.put(MongoRow.ROW_ENTRY_NAME, 1);
 				DBObject idxOpts = new BasicDBObject();
@@ -511,7 +510,6 @@ public class MongoStore implements Store, GenericStore
 			query.put(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
 			
 			keys.put(MongoRow.ROW_ENTRY_NAME, 1);
-			keys.put("_id", 0);
 			
 			found = mongoDB.getCollection(sanitizedTableName).findOne(query, keys);
 		} catch (Exception e) {
@@ -544,7 +542,6 @@ public class MongoStore implements Store, GenericStore
 		query.put("$where", "Object.keys(this." + sanitizedFamilyName + ").length > 0");
 		
 		keys.put(MongoRow.ROW_ENTRY_NAME, 1);
-		keys.put("_id", 0);
 
 		try {
 			found = mongoDB.getCollection(sanitizedTableName).findOne(query, keys);
@@ -594,7 +591,6 @@ public class MongoStore implements Store, GenericStore
 			}
 		}
 		keys.put(MongoRow.ROW_ENTRY_NAME, 1);
-		keys.put("_id", 0);
 
 		BasicDBObject mastoQuery = new BasicDBObject();
 		mastoQuery.put("$query",   query == null ? new BasicDBObject() : query);
