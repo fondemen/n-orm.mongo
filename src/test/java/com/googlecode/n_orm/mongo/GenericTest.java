@@ -5,6 +5,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import com.googlecode.n_orm.EvolutionTest;
 import com.googlecode.n_orm.GenericTests;
 import com.googlecode.n_orm.StoreTestLauncher;
 
@@ -24,6 +25,7 @@ public class GenericTest {
 		ms.dropTable(testTable);
 
 		StoreTestLauncher.INSTANCE = new MongoLauncher();
+		EvolutionTest.SUPPORTS_INCREMENTING_CHANGE = true;
 	}
 
 }
