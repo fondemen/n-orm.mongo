@@ -1,16 +1,13 @@
 package com.googlecode.n_orm.mongo;
 
-import java.util.Set;
 import java.util.Map;
+import java.util.Set;
 
 import com.googlecode.n_orm.DatabaseNotReachedException;
-
-import com.googlecode.n_orm.storeapi.Store;
-import com.googlecode.n_orm.storeapi.Constraint;
-import com.googlecode.n_orm.storeapi.SimpleStore;
-import com.googlecode.n_orm.storeapi.MetaInformation;
-import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
 import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
+import com.googlecode.n_orm.storeapi.Constraint;
+import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
+import com.googlecode.n_orm.storeapi.SimpleStore;
 
 
 public class SimpleMongoStore implements SimpleStore

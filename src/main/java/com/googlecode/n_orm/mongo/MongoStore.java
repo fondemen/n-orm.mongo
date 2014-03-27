@@ -205,10 +205,7 @@ public class MongoStore implements Store, GenericStore
 
         String sanitizedTableName = sanitizeTableName(tableName);
 
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
 		try {
 			ret = hasTableCache.get(sanitizedTableName);
@@ -307,10 +304,7 @@ public class MongoStore implements Store, GenericStore
 	public void delete(MetaInformation meta, String table, String id)
 		throws DatabaseNotReachedException
 	{
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(id);
@@ -324,11 +318,8 @@ public class MongoStore implements Store, GenericStore
 		}
 	}
 	
-	private MSQuery createQuery(String sanitizedTableName, String sanitizedRowName) {
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+	private MSQuery createQuery(String sanitizedRowName) {
+		checkIsStarted();
 		
 		DBObject query = new BasicDBObject(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
 		DBObject rowObj = new BasicDBObject();
@@ -339,6 +330,13 @@ public class MongoStore implements Store, GenericStore
 		q.rowObj = rowObj;
 		
 		return q;
+	}
+
+	private void checkIsStarted() {
+		if (!started) {
+			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
+			throw new DatabaseNotReachedException("Store not started");
+		}
 	}
 	
 	private void runQuery(MSQuery q, String sanitizedTableName) {
@@ -362,7 +360,7 @@ public class MongoStore implements Store, GenericStore
 	) throws DatabaseNotReachedException {
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
-        MSQuery q = createQuery(sanitizedTableName, sanitizedRowName);
+        MSQuery q = createQuery(sanitizedRowName);
 		enrichQueryWithInsert(meta, q, sanitizedTableName, sanitizedRowName, data);
 		runQuery(q, sanitizedTableName);
 	}
@@ -431,7 +429,7 @@ public class MongoStore implements Store, GenericStore
 	public void increment(String table, String row, Map<String, Map<String, Number>> increments) {
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
-        MSQuery q = createQuery(sanitizedTableName, sanitizedRowName);
+        MSQuery q = createQuery(sanitizedRowName);
         enrichQueryWithIncrement(q, sanitizedTableName, sanitizedRowName, increments);
 		runQuery(q, sanitizedTableName);
 	}
@@ -464,7 +462,7 @@ public class MongoStore implements Store, GenericStore
 	public void remove(String table, String row, Map<String, Set<String>> removed) {
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
-        MSQuery q = createQuery(sanitizedTableName, sanitizedRowName);
+        MSQuery q = createQuery(sanitizedRowName);
         enrichQueryWithRemove(q, sanitizedTableName, sanitizedRowName, removed);
 		runQuery(q, sanitizedTableName);
 	}
@@ -496,10 +494,7 @@ public class MongoStore implements Store, GenericStore
 	public boolean exists(MetaInformation meta, String table, String row)
 		throws DatabaseNotReachedException
 	{
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
@@ -527,10 +522,7 @@ public class MongoStore implements Store, GenericStore
 		MetaInformation meta, String table, String row, String family
 	) throws DatabaseNotReachedException
 	{
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
@@ -561,30 +553,11 @@ public class MongoStore implements Store, GenericStore
 		Constraint c, int limit, Set<String> families
 	) throws DatabaseNotReachedException
 	{
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
         String sanitizedTableName = sanitizeTableName(table);
 
-		DBObject query = null;
-		if (c != null) {
-			DBObject startCond = c.getStartKey() == null ? null : new BasicDBObject(MongoRow.ROW_ENTRY_NAME,
-					new BasicDBObject("$gte", sanitizeName(c.getStartKey())));
-			DBObject endCond = c.getEndKey() == null ? null : new BasicDBObject(MongoRow.ROW_ENTRY_NAME,
-					new BasicDBObject("$lte", sanitizeName(c.getEndKey())));
-			
-			if (startCond != null) {
-				if (endCond != null) {
-					query = new BasicDBObject("$and", new Object[] {startCond, endCond});
-				} else {
-					query = startCond;
-				}
-			} else if (endCond != null) {
-				query = endCond;
-			}
-		}
+		DBObject query = buildQueryWithRowConstraint(c);
 
 		DBObject keys = new BasicDBObject();
 		if (families != null) {
@@ -610,16 +583,34 @@ public class MongoStore implements Store, GenericStore
 		return new CloseableIterator(cur);
 	}
 
+	private DBObject buildQueryWithRowConstraint(Constraint c) {
+		DBObject query = null;
+		if (c != null) {
+			DBObject startCond = c.getStartKey() == null ? null : new BasicDBObject(MongoRow.ROW_ENTRY_NAME,
+					new BasicDBObject("$gte", sanitizeName(c.getStartKey())));
+			DBObject endCond = c.getEndKey() == null ? null : new BasicDBObject(MongoRow.ROW_ENTRY_NAME,
+					new BasicDBObject("$lte", sanitizeName(c.getEndKey())));
+			
+			if (startCond != null) {
+				if (endCond != null) {
+					query = new BasicDBObject("$and", new Object[] {startCond, endCond});
+				} else {
+					query = startCond;
+				}
+			} else if (endCond != null) {
+				query = endCond;
+			}
+		}
+		return query;
+	}
+
 
 	public byte[] get(
 			MetaInformation meta, String table, String row,
 			String family, String key
 	) throws DatabaseNotReachedException
 	{
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(row);
@@ -660,10 +651,7 @@ public class MongoStore implements Store, GenericStore
 	{
 		Map<String, byte[]> map = new HashMap<String, byte[]>();
 
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(id);
@@ -699,10 +687,7 @@ public class MongoStore implements Store, GenericStore
 		String id, String family, Constraint c
 	) throws DatabaseNotReachedException
 	{
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(id);
@@ -761,10 +746,7 @@ public class MongoStore implements Store, GenericStore
 		TreeMap<String, Map<String, byte[]>> mapOfMaps
 			= new TreeMap<String, Map<String, byte[]>>();
 
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(id);
@@ -809,14 +791,11 @@ public class MongoStore implements Store, GenericStore
 		Map<String, Map<String, Number>> increments
 	) throws DatabaseNotReachedException
 	{
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
         String sanitizedTableName = sanitizeTableName(table);
 		String sanitizedRowName = sanitizeName(id);
-        MSQuery q = createQuery(sanitizedTableName, sanitizedRowName);
+        MSQuery q = createQuery(sanitizedRowName);
 
 		enrichQueryWithInsert(meta, q, sanitizedTableName, sanitizedRowName, changed);
 		enrichQueryWithIncrement(q, sanitizedTableName, sanitizedRowName, increments);
@@ -830,32 +809,13 @@ public class MongoStore implements Store, GenericStore
 	public long count(MetaInformation meta, String table, Constraint c)
 		throws DatabaseNotReachedException
 	{
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
         String sanitizedTableName = sanitizeTableName(table);
 
 		long cnt = 0;
 
-		DBObject query = null;
-		if (c != null) {
-			DBObject startCond = c.getStartKey() == null ? null : new BasicDBObject(MongoRow.ROW_ENTRY_NAME,
-					new BasicDBObject("$gte", sanitizeName(c.getStartKey())));
-			DBObject endCond = c.getEndKey() == null ? null : new BasicDBObject(MongoRow.ROW_ENTRY_NAME,
-					new BasicDBObject("$lte", sanitizeName(c.getEndKey())));
-			
-			if (startCond != null) {
-				if (endCond != null) {
-					query = new BasicDBObject("$and", new Object[] {startCond, endCond});
-				} else {
-					query = startCond;
-				}
-			} else if (endCond != null) {
-				query = endCond;
-			}
-		}
+		DBObject query = buildQueryWithRowConstraint(c);
 
 		try {
 			cnt = mongoDB.getCollection(sanitizedTableName).count(query == null ? new BasicDBObject() : query);
@@ -868,10 +828,7 @@ public class MongoStore implements Store, GenericStore
 
 	public void dropTable(String table)
 	{
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
         String sanitizedTableName = sanitizeTableName(table);
 
@@ -896,7 +853,7 @@ public class MongoStore implements Store, GenericStore
 	}
 	
 	public void setDb(String dbname) {
-		this.setDB(db);
+		this.setDB(dbname);
 	}
 
 	public void setDB(String dbname)
@@ -911,10 +868,7 @@ public class MongoStore implements Store, GenericStore
 	public synchronized void close()
 		throws DatabaseNotReachedException
 	{
-		if (!started) {
-			Mongo.mongoLog.log(Level.SEVERE, "Store not started");
-			throw new DatabaseNotReachedException("Store not started");
-		}
+		checkIsStarted();
 
 		// TODO: save changes before closing
 
