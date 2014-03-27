@@ -60,6 +60,7 @@ public class MongoStore implements Store, GenericStore
 		
 		Set<Class<?>> simpleClasses = new HashSet<Class<?>>();
 		simpleClasses.add(Boolean.class);
+		simpleClasses.add(boolean.class);
 		simpleClasses.add(String.class);
 		simpleClasses.add(long.class);
 		simpleClasses.add(Long.class);
@@ -69,6 +70,8 @@ public class MongoStore implements Store, GenericStore
 		simpleClasses.add(Short.class);
 		simpleClasses.add(byte.class);
 		simpleClasses.add(Byte.class);
+		// Mongo converts reals to integers depending on their value,
+		// which makes it hard to convert back the proper value (type lost)
 //		simpleClasses.add(double.class);
 //		simpleClasses.add(Double.class);
 //		simpleClasses.add(float.class);
