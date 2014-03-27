@@ -26,7 +26,6 @@
 			<groupId>org.mongodb</groupId>
 			<artifactId>mongo-java-driver</artifactId>
 			<version>${mongoDB.version}</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.googlecode.n_orm</groupId>
