@@ -8,14 +8,13 @@
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>mongo</artifactId>
-	<groupId>com.googlecode.n_orm</groupId>
 	<name>mongoDB driver for n-orm</name>
 	<packaging>jar</packaging>
 
 	<scm>
-		<connection>scm:hg:http://n-orm.googlecode.com/hg/</connection>
-		<developerConnection>scm:hg:https://n-orm.googlecode.com/hg/</developerConnection>
-		<url>http://n-orm.googlecode.com/hg/</url>
+		<connection>scm:hg:https://code.google.com/p/n-orm.mongo/</connection>
+		<developerConnection>scm:hg:https://code.google.com/p/n-orm.mongo/</developerConnection>
+		<url>https://code.google.com/p/n-orm.mongo/</url>
 	</scm>
 	
 	<properties>
@@ -51,7 +50,7 @@
 		<site>
 			<id>wiki</id>
 			<name>n-orm Wiki pages</name>
-			<url>file://${basedir}/../../n-orm.wiki/mongoDB</url>
+			<url>file://${basedir}/../n-orm.wiki/mongoDB</url>
 		</site>
 	</distributionManagement>
 </project>
