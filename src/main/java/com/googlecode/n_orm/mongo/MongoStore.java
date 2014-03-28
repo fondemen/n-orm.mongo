@@ -406,7 +406,7 @@ public class MongoStore implements Store, GenericStore
 				Object value;
 				if (clazz == null) {
 					value = col.getValue();
-				} else if ( PersistingElement.class.isAssignableFrom(clazz)) {
+				} else if ( PersistingElement.class.isAssignableFrom(clazz) || clazz.isEnum() ) {
 					value = ConversionTools.convert(String.class, col.getValue());
 				} else if (SIMPLE_TYPES.contains(clazz)) {
 					value = ConversionTools.convert(clazz, col.getValue());
