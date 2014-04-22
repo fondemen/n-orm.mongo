@@ -149,6 +149,10 @@ public class MongoStore implements Store, GenericStore
 		knownStores.put(p, this);
 	}
 
+	public MongoClient getMongoClient() {
+		return mongoClient;
+	}
+
 	public synchronized void start()
 		throws DatabaseNotReachedException
 	{
