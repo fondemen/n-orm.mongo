@@ -538,7 +538,7 @@ public class MongoStore implements Store, GenericStore
 
 		query.put(MongoRow.ROW_ENTRY_NAME, sanitizedRowName);
 		query.put(sanitizedFamilyName, new BasicDBObject("$type", 3));
-		query.put("$where", "Object.keys(this." + sanitizedFamilyName + ").length > 0");
+		query.put("$where", "Object.keys(this['" + sanitizedFamilyName + "']).length > 0");
 		
 		keys.put(MongoRow.ROW_ENTRY_NAME, 1);
 
