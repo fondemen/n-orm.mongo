@@ -149,8 +149,41 @@ public class MongoStore implements Store, GenericStore
 		knownStores.put(p, this);
 	}
 
+	/**
+	 * The port for the MongoDB connection.
+	 */
+	public int getPort() {
+		return port;
+	}
+
+	/**
+	 * The host name or ip for the MongoDB connection.
+	 */
+	public String getHost() {
+		return host;
+	}
+
+	/**
+	 * The name of the database used by this driver.
+	 */
+	public String getDb() {
+		return db;
+	}
+
+	/**
+	 * The MongoDB connection.
+	 * Null if not started yet.
+	 */
 	public MongoClient getMongoClient() {
 		return mongoClient;
+	}
+
+	/**
+	 * The database used by this driver.
+	 * Null if not started yet.
+	 */
+	public DB getMongoDB() {
+		return mongoDB;
 	}
 
 	public synchronized void start()
@@ -190,14 +223,24 @@ public class MongoStore implements Store, GenericStore
         started = true;
 	}
 
-    protected String sanitizeTableName(String name) {
+	/**
+	 * Mangles a name supposed to represent a table.
+	 */
+    public String sanitizeTableName(String name) {
         return name.replace('$', '_');
     }
 
+    /**
+     * Mangles a name supposed to represent a property or a column family.
+     */
     protected String sanitizeName(String name) {
         return MongoNameSanitizer.sanitize(name);
     }
 
+    /**
+     * Finds back from a {@link #sanitizeName(String) sanitized name}
+     * the original name of a property or a column family.
+     */
 	protected String dirtyName(String name) {
 		return MongoNameSanitizer.dirty(name);
 	}
