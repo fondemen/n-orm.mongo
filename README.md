@@ -43,7 +43,7 @@ Here is an example `pom.xml`:
         <dependency>
             <groupId>com.googlecode.n_orm</groupId>
             <artifactId>storage</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>${n-orm.version}</version>
             <type>jar</type>
         </dependency>
         <dependency>
