@@ -674,6 +674,7 @@ public class MongoStore implements Store, GenericStore
 				sanitizedFamilyName,
 				sanitizedKeyName
 			);
+			if (limitedRow == null) return null;
 
 			columns = getColumns(
 				limitedRow,
@@ -708,6 +709,7 @@ public class MongoStore implements Store, GenericStore
 
 		try {
 			limitedRow = findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamilyName);
+			if (limitedRow == null) return null;
 
 			columns = getColumns(
 				limitedRow,
@@ -745,6 +747,7 @@ public class MongoStore implements Store, GenericStore
 
 		try {
 			limitedRow = findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamilyName);
+			if (limitedRow == null) return null;
 
 			columns = getColumns(
 				limitedRow,
@@ -806,6 +809,7 @@ public class MongoStore implements Store, GenericStore
 
 		try {
 			limitedRow = findLimitedRow(sanitizedTableName, sanitizedRowName, sanitizedFamiliesNames);
+			if (limitedRow == null) return null;
 
 			for (String family : families) {
 				Map<String, byte[]> map = new HashMap<String, byte[]>();
