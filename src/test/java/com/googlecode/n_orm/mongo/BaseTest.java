@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import java.util.Properties;
 import java.util.Arrays;
 
@@ -20,6 +21,7 @@ import com.googlecode.n_orm.storeapi.Constraint;
 import com.googlecode.n_orm.storeapi.MetaInformation;
 import com.googlecode.n_orm.storeapi.Row;
 import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
+import com.mongodb.MongoClient;
 import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
 import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 
@@ -304,6 +306,43 @@ public class BaseTest
 			Row r = it.next();
 			ColumnFamilyData data_ret = r.getValues();
 			// TODO: test what's in data_ret
+		}
+	}
+	
+	@Test(timeout=10000)
+	public void tableDoesntExistsCache() throws InterruptedException {
+		MongoStore mongoStore = new MongoStore();
+		mongoStore.setInexistingTableCacheTTL(1, TimeUnit.SECONDS);
+		mongoStore.setDB(DBNAME);
+
+		mongoStore.start();
+		mongoStore.dropTable(COLLECTION);
+
+		MongoStore mongoStore2 = new MongoStore();
+		mongoStore2.setDB(DBNAME);
+
+		mongoStore2.start();
+
+		ColumnFamilyData data1 = new DefaultColumnFamilyData();
+		Map<String, byte[]> col1 = new HashMap<String, byte[]>();
+		col1.put("to$to", (new String("ha.ha")).getBytes());
+		data1.put("fa.$m1", col1);
+		
+		assertNull(mongoStore.get(null, COLLECTION, TEST_ROW, TEST_FAMILY));
+		long now = System.currentTimeMillis(), expiration = now + 1000;
+		
+		mongoStore2.insert(null, COLLECTION, TEST_ROW, data1);
+		
+		while(true) {
+			Map<String, byte[]> res = mongoStore.get(null, COLLECTION, TEST_ROW, TEST_FAMILY);
+			long diffToExpiration = expiration - System.currentTimeMillis();
+			if (diffToExpiration > 100) {
+				assertNull(res);
+			} else if (diffToExpiration < -100) {
+				assertNotNull(res);
+				return;
+			}
+			Thread.yield();
 		}
 	}
 }

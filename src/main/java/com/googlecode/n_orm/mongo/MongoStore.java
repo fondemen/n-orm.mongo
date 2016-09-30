@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import com.googlecode.n_orm.DatabaseNotReachedException;
@@ -92,10 +93,26 @@ public class MongoStore implements Store, GenericStore
 	private int    port = MONGO_PORT;
 	private String host = hostname;
 	private String db   = DB_NAME;
+	
+	private long existingTableCacheTTL = TimeUnit.MINUTES.toMillis(10);
+	private long inexistingTableCacheTTL = TimeUnit.SECONDS.toMillis(3);
 
 	private volatile boolean started = false;
 
-	private Map<String, Boolean> hasTableCache = new HashMap<String, Boolean>();
+	private class TableAvailablility {
+		private final boolean exists;
+		private final long expired;
+		
+		public TableAvailablility(boolean exists) {
+			this.exists = exists;
+			this.expired = System.currentTimeMillis() + (exists ? existingTableCacheTTL : inexistingTableCacheTTL);
+		}
+		
+		public boolean isExpired() {
+			return System.currentTimeMillis() > this.expired;
+		}
+	}
+	private Map<String, TableAvailablility> hasTableCache = new HashMap<String, TableAvailablility>();
 
 	public static MongoStore getStore() {
 		Properties p = new Properties();
@@ -186,6 +203,37 @@ public class MongoStore implements Store, GenericStore
 		return mongoDB;
 	}
 
+	/**
+	 * Minimum time during which a table known to exist will not be tested again for existence ; default value is 10 minutes.
+	 */
+	public long getExistingTableCacheTTL() {
+		return existingTableCacheTTL;
+	}
+
+	public void setExistingTableCacheTTL(long existingTableCacheTTL) {
+		this.existingTableCacheTTL = existingTableCacheTTL;
+	}
+
+	public void setExistingTableCacheTTL(int existingTableCacheTTL, TimeUnit unit) {
+		this.setExistingTableCacheTTL(unit.toMillis(existingTableCacheTTL));
+	}
+
+
+	/**
+	 * Minimum time during which a table known NOT to exist will not be tested again for existence ; default value is 3 seconds.
+	 */
+	public long getInexistingTableCacheTTL() {
+		return inexistingTableCacheTTL;
+	}
+
+	public void setInexistingTableCacheTTL(long inexistingTableCacheTTL) {
+		this.inexistingTableCacheTTL = inexistingTableCacheTTL;
+	}
+
+	public void setInexistingTableCacheTTL(int inexistingTableCacheTTL, TimeUnit unit) {
+		this.setInexistingTableCacheTTL(unit.toMillis(inexistingTableCacheTTL));
+	}
+
 	public synchronized void start()
 		throws DatabaseNotReachedException
 	{
@@ -248,24 +296,26 @@ public class MongoStore implements Store, GenericStore
 	public boolean hasTable(String tableName)
 		throws DatabaseNotReachedException
 	{
-		Boolean ret;
+		boolean ret;
 
         String sanitizedTableName = sanitizeTableName(tableName);
 
 		checkIsStarted();
 
 		try {
-			ret = hasTableCache.get(sanitizedTableName);
-			if (ret == null) {
+			TableAvailablility ta = hasTableCache.get(sanitizedTableName);
+			if (ta == null || ta.isExpired()) {
 				ret = mongoDB.collectionExists(sanitizedTableName);
-				hasTableCache.put(sanitizedTableName, ret);
+				hasTableCache.put(sanitizedTableName, new TableAvailablility(ret));
 				
+			} else {
+				ret = ta.exists;
 			}
 		} catch (Exception e) {
 			throw new DatabaseNotReachedException(e);
 		}
 
-		return ret.booleanValue();
+		return ret;
 	}
 
 
@@ -389,7 +439,7 @@ public class MongoStore implements Store, GenericStore
 	private void runQuery(MSQuery q, String sanitizedTableName) {
 		try {
 			DBCollection col = mongoDB.getCollection(sanitizedTableName);
-			if (hasTableCache.put(sanitizedTableName, true) == null && !"_id".equals(MongoRow.ROW_ENTRY_NAME)) {
+			if (hasTableCache.put(sanitizedTableName, new TableAvailablility(true)) == null && !"_id".equals(MongoRow.ROW_ENTRY_NAME)) {
 				DBObject idx = new BasicDBObject();
 				idx.put(MongoRow.ROW_ENTRY_NAME, 1);
 				DBObject idxOpts = new BasicDBObject();
@@ -885,7 +935,7 @@ public class MongoStore implements Store, GenericStore
 
 		try {
 			mongoDB.getCollection(sanitizedTableName).drop();
-			hasTableCache.put(sanitizedTableName, false);
+			hasTableCache.put(sanitizedTableName, new TableAvailablility(false));
 		} catch (Exception e) {
 			throw new DatabaseNotReachedException(e);
 		}
