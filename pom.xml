@@ -12,13 +12,13 @@
 	<packaging>jar</packaging>
 
 	<scm>
-		<connection>scm:hg:https://code.google.com/p/n-orm.mongo/</connection>
-		<developerConnection>scm:hg:https://code.google.com/p/n-orm.mongo/</developerConnection>
-		<url>https://code.google.com/p/n-orm.mongo/</url>
+		<url>https://github.com/fondemen/n-orm.mongo</url>
+		<connection>scm:git:git://github.com/fondemen/n-orm.mongo.git</connection>
+		<developerConnection>scm:git:git@github.com:fondemen/n-orm.mongo.git</developerConnection>
 	</scm>
 	
 	<properties>
-		<mongoDB.version>2.10.1</mongoDB.version>
+		<mongoDB.version>2.14.3</mongoDB.version>
 	</properties>
 
 	<dependencies>
@@ -44,7 +44,7 @@
 	</dependencies>
 
 	<description>mongoDB driver for n-orm.</description>
-	<url>http://n-orm.googlecode.com/</url>
+	<url>https://github.com/fondemen/n-orm.mongo</url>
 	<distributionManagement>
 		<site>
 			<id>wiki</id>
