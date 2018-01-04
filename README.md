@@ -13,7 +13,7 @@ host=localhost
 port=27017
 db=mydb
 ```
-Javadoc is available [here](https://fondemen.github.io/n-orm.core/mongoDB/apidocs/).
+Javadoc is available [here](https://fondemen.github.io/n-orm.mongo/mongoDB/apidocs/).
 
 ### Where to place `store.properties` ? ###
 
