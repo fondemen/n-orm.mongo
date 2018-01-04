@@ -8,7 +8,7 @@ This driver is based on the java mongo driver v2.
 To store your objects using Mongo, you need to specify a `store.properties` file as the following:
 
 ```
-class=[com.googlecode.n_orm.mongo.MongoStore](https://fondemen.github.io/n-orm.core/mongoDB/apidocs/com/googlecode/n_orm/mongo/MongoStore.html)
+class=com.googlecode.n_orm.mongo.MongoStore
 host=localhost
 port=27017
 db=mydb
