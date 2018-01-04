@@ -2,8 +2,10 @@
 Automatically exported from code.google.com/p/n-orm.mongo
 
 This is the [MongoDB](https://www.mongodb.org) connector for [n-orm](https://github.com/fondemen/n-orm.core).
+This driver is based on the java mongo driver v2.
 
-Here is an example `store.properties`:
+## `store.properties` ##
+To store your objects using Mongo, you need to specify a `store.properties` file as the following:
 
 ```
 class=com.googlecode.n_orm.mongo.MongoStore
@@ -11,8 +13,38 @@ host=localhost
 port=27017
 db=mydb
 ```
+### Where to place `store.properties` ? ###
 
-Here is an example `pom.xml`:
+The `store.properties` file will be looked up in the classpath for each [persisting](https://fondemen.github.io/n-orm.core/storage/apidocs/index.html?com/googlecode/n_orm/Persisting.html) class, first in the same package, then in the package above, etc. For instance, for a classpath set to `srcfolder1:src/folder2:jar1.jar`, the store file for class a.b.C will be searched in the following places:
+  1. `srcfolder1/a/b/store.properties`
+  1. `src/folder2/a/b/store.properties`
+  1. `a/b/store.properties` from jar file `jar1.jar`
+  1. `srcfolder1/a/store.properties`
+  1. `src/folder2/a/store.properties`
+  1. `a/store.properties` from jar file `jar1.jar`
+  1. `srcfolder1/store.properties`
+  1. `src/folder2/store.properties`
+  1. `store.properties` from jar file `jar1.jar`
+The first found file is the right file.
+
+## Maven integration ##
+
+See the [getting started](https://github.com/fondemen/n-orm.core/wiki/GettingStarted#using-n-orm-with-maven) article, and the [pom](https://github.com/fondemen/n-orm.sample/blob/master/example-mongo-pom.xml) for the sample project.
+
+Instead of importing the `store` artifact, you can use the `mongo` one:
+```
+<dependency>
+  <groupId>com.googlecode.n_orm</groupId>
+  <artifactId>mongo</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <type>jar</type>
+  <scope>compile</scope>
+</dependency>
+```
+
+### Example `pom.xml` ###
+
+You can ispire yourself from the [sample project](https://github.com/fondemen/n-orm.sample).
 
 ````
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
