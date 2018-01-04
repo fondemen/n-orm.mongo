@@ -8,11 +8,13 @@ This driver is based on the java mongo driver v2.
 To store your objects using Mongo, you need to specify a `store.properties` file as the following:
 
 ```
-class=com.googlecode.n_orm.mongo.MongoStore
+class=[com.googlecode.n_orm.mongo.MongoStore](https://fondemen.github.io/n-orm.core/mongoDB/apidocs/com/googlecode/n_orm/mongo/MongoStore.html)
 host=localhost
 port=27017
 db=mydb
 ```
+Javadoc is available [here](https://fondemen.github.io/n-orm.core/mongoDB/apidocs/).
+
 ### Where to place `store.properties` ? ###
 
 The `store.properties` file will be looked up in the classpath for each [persisting](https://fondemen.github.io/n-orm.core/storage/apidocs/index.html?com/googlecode/n_orm/Persisting.html) class, first in the same package, then in the package above, etc. For instance, for a classpath set to `srcfolder1:src/folder2:jar1.jar`, the store file for class a.b.C will be searched in the following places:
@@ -25,6 +27,7 @@ The `store.properties` file will be looked up in the classpath for each [persist
   1. `srcfolder1/store.properties`
   1. `src/folder2/store.properties`
   1. `store.properties` from jar file `jar1.jar`
+  
 The first found file is the right file.
 
 ## Maven integration ##
