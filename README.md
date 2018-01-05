@@ -1,4 +1,5 @@
 # n-orm.mongo
+[![Build Status](https://travis-ci.org/fondemen/n-orm.mongo.svg?branch=master)](https://travis-ci.org/fondemen/n-orm.mongo)
 Automatically exported from code.google.com/p/n-orm.mongo
 
 This is the [MongoDB](https://www.mongodb.org) connector for [n-orm](https://github.com/fondemen/n-orm.core).
