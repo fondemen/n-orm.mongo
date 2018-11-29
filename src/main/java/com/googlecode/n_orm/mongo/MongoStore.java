@@ -30,6 +30,7 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.DuplicateKeyException;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 
@@ -40,7 +41,7 @@ public class MongoStore implements Store, GenericStore
 	private static short  MONGO_PORT =  27017;
 	private static String MONGO_HOST = "localhost";
 	
-	private static final Set<Class<?>> SIMPLE_TYPES;
+	private static final Set<Class<?>> SIMPLE_TYPES, REAL_TYPES;
 
 	private static String hostname;
 
@@ -71,15 +72,17 @@ public class MongoStore implements Store, GenericStore
 		simpleClasses.add(Short.class);
 		simpleClasses.add(byte.class);
 		simpleClasses.add(Byte.class);
-		// Mongo converts reals to integers depending on their value,
-		// which makes it hard to convert back the proper value (type lost)
-//		simpleClasses.add(double.class);
-//		simpleClasses.add(Double.class);
-//		simpleClasses.add(float.class);
-//		simpleClasses.add(Float.class);
 		simpleClasses.add(Date.class);
 		
 		SIMPLE_TYPES = Collections.unmodifiableSet(simpleClasses);
+
+		Set<Class<?>> realClasses = new HashSet<Class<?>>();
+		realClasses.add(double.class);
+		realClasses.add(Double.class);
+		realClasses.add(float.class);
+		realClasses.add(Float.class);
+		
+		REAL_TYPES = Collections.unmodifiableSet(realClasses);
 	}
 	
 	private static class MSQuery {
@@ -444,9 +447,18 @@ public class MongoStore implements Store, GenericStore
 				idx.put(MongoRow.ROW_ENTRY_NAME, 1);
 				DBObject idxOpts = new BasicDBObject();
 				idxOpts.put("unique", true);
-				col.ensureIndex(idx, idxOpts);
+				col.createIndex(idx, idxOpts);
 			}
 			col.update(q.query, q.rowObj, true, false);
+		} catch (DuplicateKeyException de) {
+			try {
+				// Might tilt in some heavily concurrent environments (caught by com.googlecode.n_orm.IncrementsTest::multiThreadedIncr)
+				// Retrying...
+				DBCollection col = mongoDB.getCollection(sanitizedTableName);
+				col.update(q.query, q.rowObj, true, false);
+			} catch (MongoException x) {
+				throw new DatabaseNotReachedException(de);
+			}
 		} catch (MongoException e) {
 			throw new DatabaseNotReachedException(e);
 		}
@@ -505,6 +517,8 @@ public class MongoStore implements Store, GenericStore
 					value = col.getValue();
 				} else if ( PersistingElement.class.isAssignableFrom(clazz) || clazz.isEnum() ) {
 					value = ConversionTools.convert(String.class, col.getValue());
+				} else if (REAL_TYPES.contains(clazz)) {
+					value = ConversionTools.convert(clazz, col.getValue());
 				} else if (SIMPLE_TYPES.contains(clazz)) {
 					value = ConversionTools.convert(clazz, col.getValue());
 				} else {
@@ -665,14 +679,9 @@ public class MongoStore implements Store, GenericStore
 		}
 		keys.put(MongoRow.ROW_ENTRY_NAME, 1);
 
-		BasicDBObject mastoQuery = new BasicDBObject();
-		mastoQuery.put("$query",   query == null ? new BasicDBObject() : query);
-		mastoQuery.put("$limit",   Integer.toString(limit));
-		mastoQuery.put("$orderby", new BasicDBObject(MongoRow.ROW_ENTRY_NAME, 1));
-
 		DBCursor cur;
 		try {
-			cur = mongoDB.getCollection(sanitizedTableName).find(mastoQuery, keys);
+			cur = mongoDB.getCollection(sanitizedTableName).find(query, keys).limit(limit).sort(new BasicDBObject(MongoRow.ROW_ENTRY_NAME, 1));
 		} catch (MongoException e) {
 			throw new DatabaseNotReachedException(e);
 		}
@@ -681,22 +690,12 @@ public class MongoStore implements Store, GenericStore
 	}
 
 	private DBObject buildQueryWithRowConstraint(Constraint c) {
-		DBObject query = null;
+		DBObject query = new BasicDBObject();
 		if (c != null) {
-			DBObject startCond = c.getStartKey() == null ? null : new BasicDBObject(MongoRow.ROW_ENTRY_NAME,
-					new BasicDBObject("$gte", sanitizeName(c.getStartKey())));
-			DBObject endCond = c.getEndKey() == null ? null : new BasicDBObject(MongoRow.ROW_ENTRY_NAME,
-					new BasicDBObject("$lte", sanitizeName(c.getEndKey())));
-			
-			if (startCond != null) {
-				if (endCond != null) {
-					query = new BasicDBObject("$and", new Object[] {startCond, endCond});
-				} else {
-					query = startCond;
-				}
-			} else if (endCond != null) {
-				query = endCond;
-			}
+			DBObject conds = new BasicDBObject();
+			if (c.getStartKey() != null) conds.put("$gte", sanitizeName(c.getStartKey()));
+			if (c.getEndKey() != null) conds.put("$lte", sanitizeName(c.getEndKey()));
+			query.put(MongoRow.ROW_ENTRY_NAME, conds);
 		}
 		return query;
 	}

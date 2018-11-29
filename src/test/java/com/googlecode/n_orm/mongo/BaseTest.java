@@ -2,26 +2,40 @@ package com.googlecode.n_orm.mongo;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.Properties;
+import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Collection;
 
 import org.junit.Test;
+import org.bson.Document;
 import org.junit.After;
 import org.junit.Before;
 import static org.junit.Assert.*;
 
 import com.googlecode.n_orm.StoreSelector;
+import com.googlecode.n_orm.UnknownColumnFamily;
+import com.googlecode.n_orm.cf.ColumnFamily;
+import com.googlecode.n_orm.conversion.ConversionTools;
 import com.googlecode.n_orm.mongo.MongoStore;
 import com.googlecode.n_orm.DatabaseNotReachedException;
-
+import com.googlecode.n_orm.Key;
+import com.googlecode.n_orm.Persisting;
+import com.googlecode.n_orm.PersistingElement;
+import com.googlecode.n_orm.PersistingElementListener;
+import com.googlecode.n_orm.PropertyManagement.PropertyFamily;
 import com.googlecode.n_orm.storeapi.Constraint;
 import com.googlecode.n_orm.storeapi.MetaInformation;
 import com.googlecode.n_orm.storeapi.Row;
 import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
+import com.googlecode.n_orm.storeapi.Store;
 import com.mongodb.MongoClient;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
 import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 
@@ -344,5 +358,255 @@ public class BaseTest
 			}
 			Thread.yield();
 		}
+	}
+	
+	public static class ARealClass implements PersistingElement {
+		@Key public double key;
+		public double value;
+		@Override
+		public Store getStore() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		@Override
+		public void setStore(Store store) throws IllegalStateException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public String getTable() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		@Override
+		public List<Field> getKeys() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		@Override
+		public PropertyFamily getPropertiesColumnFamily() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		@Override
+		public Collection<ColumnFamily<?>> getColumnFamilies() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		@Override
+		public ColumnFamily<?> getColumnFamily(String columnFamilyName) throws UnknownColumnFamily {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		@Override
+		public ColumnFamily<?> getColumnFamily(Object collection) throws UnknownColumnFamily {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		@Override
+		public String getIdentifier() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		@Override
+		public String getFullIdentifier() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		@Override
+		public boolean hasChanged() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+		@Override
+		public void store() throws DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void storeNoCache() throws DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void delete() throws DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void deleteNoCache() throws DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public PersistingElement getCachedVersion() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		@Override
+		public boolean exists() throws DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			return false;
+		}
+		@Override
+		public boolean existsInStore() throws DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			return false;
+		}
+		public void activate(Object[] families) throws DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void activate(String[] families) throws DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void activateIfNotAlready(String[] families) throws DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void activateIfNotAlready(long lastActivationTimeoutMs, String[] families)
+				throws DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void activateColumnFamily(String name) throws UnknownColumnFamily, DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void activateColumnFamily(String name, Object from, Object to)
+				throws UnknownColumnFamily, DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void activateColumnFamilyIfNotAlready(String name)
+				throws UnknownColumnFamily, DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void activateColumnFamilyIfNotAlready(String name, long lastActivationTimeoutMs)
+				throws UnknownColumnFamily, DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void activateColumnFamilyIfNotAlready(String name, Object from, Object to)
+				throws UnknownColumnFamily, DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void activateColumnFamilyIfNotAlready(String name, long lastActivationTimeoutMs, Object from, Object to)
+				throws UnknownColumnFamily, DatabaseNotReachedException {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void flush() {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public int compareTo(PersistingElement rhs) {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+		@Override
+		public void addPersistingElementListener(PersistingElementListener listener) {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void removePersistingElementListener(PersistingElementListener listener) {
+			// TODO Auto-generated method stub
+			
+		}
+		public void activateFromRawData(Set<String> cf, Row.ColumnFamilyData data) {
+			
+		}
+		public Object addAdditionalProperty(String p) {
+			return null;
+		}
+		public Object addAdditionalProperty(String p, Object o, boolean b) {
+			return null;
+		}
+		public Object getAdditionalProperty(String p) {
+			return null;
+		}
+		public Set<String> getColumnFamilyNames() {
+			return null;
+		}
+		public void checkIsValid() {
+			
+		}
+		public Collection<Class<? extends PersistingElement>> getPersistingSuperClasses() {
+			return null;
+		}
+		public boolean hasListener(PersistingElementListener listener) {
+			return false;
+		}
+		public boolean isKnownAsExistingInStore() {
+			return false;
+		}
+		public boolean isKnownAsNotExistingInStore() {
+			return false;
+		}
+		public void updateFromPOJO() {
+		}
+	}
+	
+	@Test
+	public void storingRealRetrieveReal() throws NoSuchFieldException, SecurityException {
+		MongoStore mongoStore = new MongoStore();
+		mongoStore.setDB(DBNAME);
+		mongoStore.start();
+		mongoStore.dropTable(COLLECTION);
+		
+		ARealClass elt = new ARealClass();
+		elt.key = 1.0d;
+		elt.value = 42.0d;
+
+		ColumnFamilyData data = new DefaultColumnFamilyData();
+		Map<String, byte[]> col = new HashMap<String, byte[]>();
+		col.put("value", ConversionTools.convert(42.0d, double.class));
+		data.put("props", col);
+		
+		Map<String, Field> metaFams = new HashMap<String, Field>();
+		metaFams.put("value", ARealClass.class.getField("value"));
+		MetaInformation meta = new MetaInformation().forElement(elt).withColumnFamilies(metaFams);
+		
+		mongoStore.storeChanges(meta, COLLECTION, TEST_ROW, data, null, null);
+		
+		Document storedDoc = mongoStore.getMongoClient().getDatabase(DBNAME).getCollection(COLLECTION).find(Filters.eq(MongoRow.ROW_ENTRY_NAME, TEST_ROW)).projection(Projections.include("props.value")).first();
+		Object storedValue = ((Document)storedDoc.get("props")).get("value");
+		assertEquals(Double.class, storedValue.getClass());
+		assertEquals(42.0d, ((Double)storedValue).doubleValue(), Double.MIN_NORMAL);
+	}
+	
+	@Test
+	public void storingBytesRetrieveReal() throws NoSuchFieldException, SecurityException {
+		MongoStore mongoStore = new MongoStore();
+		mongoStore.setDB(DBNAME);
+		mongoStore.start();
+		mongoStore.dropTable(COLLECTION);
+
+		ColumnFamilyData data = new DefaultColumnFamilyData();
+		Map<String, byte[]> col = new HashMap<String, byte[]>();
+		col.put("dvalue", ConversionTools.convert(42.0d, double.class));
+		data.put("props", col);
+		
+		mongoStore.storeChanges(null, COLLECTION, TEST_ROW, data, null, null);
+		
+		byte[] rawVal = mongoStore.get(null, COLLECTION, TEST_ROW, "props", "dvalue");
+		
+		double val = ConversionTools.convert(double.class, rawVal);
+		assertEquals(42.0d, val, Double.MIN_NORMAL);
 	}
 }
