@@ -8,6 +8,7 @@
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>mongo</artifactId>
+        <version>3.9-${parent.version}</version>
 	<name>mongoDB driver for n-orm</name>
 	<packaging>jar</packaging>
 

@@ -1,14 +1,16 @@
 package com.googlecode.n_orm.mongo;
 
+import org.bson.Document;
+
 import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 import com.googlecode.n_orm.storeapi.Row;
-import com.mongodb.DBCursor;
+import com.mongodb.client.MongoCursor;
 
 final class CloseableIterator implements CloseableKeyIterator
 {
-	private DBCursor cursor;
+	private MongoCursor<Document> cursor;
 
-	public CloseableIterator(DBCursor cur) {
+	public CloseableIterator(MongoCursor<Document> cur) {
 		cursor = cur;
 	}
 
@@ -26,10 +28,6 @@ final class CloseableIterator implements CloseableKeyIterator
 		}
 
 		return row;
-	}
-
-	public Row curr() {
-		return new MongoRow(cursor.curr());
 	}
 
 	@Override

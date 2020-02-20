@@ -1,43 +1,42 @@
 package com.googlecode.n_orm.mongo;
 
-import java.util.Map;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
-import java.util.Properties;
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Collection;
 
-import org.junit.Test;
 import org.bson.Document;
-import org.junit.After;
 import org.junit.Before;
-import static org.junit.Assert.*;
+import org.junit.Test;
 
-import com.googlecode.n_orm.StoreSelector;
-import com.googlecode.n_orm.UnknownColumnFamily;
-import com.googlecode.n_orm.cf.ColumnFamily;
-import com.googlecode.n_orm.conversion.ConversionTools;
-import com.googlecode.n_orm.mongo.MongoStore;
 import com.googlecode.n_orm.DatabaseNotReachedException;
 import com.googlecode.n_orm.Key;
-import com.googlecode.n_orm.Persisting;
 import com.googlecode.n_orm.PersistingElement;
 import com.googlecode.n_orm.PersistingElementListener;
 import com.googlecode.n_orm.PropertyManagement.PropertyFamily;
+import com.googlecode.n_orm.UnknownColumnFamily;
+import com.googlecode.n_orm.cf.ColumnFamily;
+import com.googlecode.n_orm.conversion.ConversionTools;
+import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 import com.googlecode.n_orm.storeapi.Constraint;
+import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
 import com.googlecode.n_orm.storeapi.MetaInformation;
 import com.googlecode.n_orm.storeapi.Row;
 import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
 import com.googlecode.n_orm.storeapi.Store;
-import com.mongodb.MongoClient;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
-import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 
 
 public class BaseTest

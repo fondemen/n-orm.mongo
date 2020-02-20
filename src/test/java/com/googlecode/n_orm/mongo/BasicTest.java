@@ -1,6 +1,10 @@
 package com.googlecode.n_orm.mongo;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -13,16 +17,11 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.googlecode.n_orm.StoreSelector;
-import com.googlecode.n_orm.mongo.SimpleMongoStore;
-import com.googlecode.n_orm.DatabaseNotReachedException;
-
+import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 import com.googlecode.n_orm.storeapi.Constraint;
-import com.googlecode.n_orm.storeapi.MetaInformation;
+import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
 import com.googlecode.n_orm.storeapi.Row;
 import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
-import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
-import com.googlecode.n_orm.storeapi.CloseableKeyIterator;
 
 
 public class BasicTest {

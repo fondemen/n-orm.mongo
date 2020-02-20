@@ -3,16 +3,18 @@ package com.googlecode.n_orm.mongo;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.bson.Document;
+import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 
 import com.googlecode.n_orm.KeyManagement;
 import com.googlecode.n_orm.conversion.ConversionTools;
 import com.googlecode.n_orm.storeapi.DefaultColumnFamilyData;
 import com.googlecode.n_orm.storeapi.Row;
-import com.mongodb.DBObject;
 
 
 class MongoRow implements Row {
@@ -29,13 +31,13 @@ class MongoRow implements Row {
 	private final String key;
 	private final ColumnFamilyData values;
 
-	public MongoRow(DBObject llRow) {
+	public MongoRow(Document llRow) {
 		
 		Object id = llRow.get(ROW_ENTRY_NAME);
 		if (id instanceof String) {
 			key = MongoNameSanitizer.dirty((String)id);
 		} else if (id instanceof ObjectId) {
-			key = ((ObjectId)id).toStringMongod() + KeyManagement.KEY_END_SEPARATOR;
+			key = ((ObjectId)id).toHexString() + KeyManagement.KEY_END_SEPARATOR;
 		} else {
 			throw new IllegalStateException("Row " + llRow + " has unexpected id " + id);
 		}
@@ -47,12 +49,14 @@ class MongoRow implements Row {
 				continue;
 			
 			Map<String, byte[]> map = new HashMap<String, byte[]>();
-			DBObject columns = (DBObject) llRow.get(family);
+			Document columns = (Document) llRow.get(family);
 
-			for (String k : columns.keySet()) {
+			for (Entry<String, Object> kv : columns.entrySet()) {
+				Object val = kv.getValue();
+				if (val instanceof Binary) val = ((Binary)val).getData();
 				map.put(
-					MongoNameSanitizer.dirty(k),
-					ConversionTools.convert(columns.get(k))
+					MongoNameSanitizer.dirty(kv.getKey()),
+					ConversionTools.convert(val)
 				);
 			}
 
