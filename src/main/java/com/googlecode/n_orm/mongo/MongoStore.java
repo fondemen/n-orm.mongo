@@ -96,7 +96,7 @@ public class MongoStore implements Store, GenericStore
 	private int    port = MONGO_PORT;
 	private String host = hostname;
 	private String db   = DB_NAME;
-	private String user,pwd;
+	private String user,pwd, authDB = "admin";
 	
 	private long existingTableCacheTTL = TimeUnit.MINUTES.toMillis(10);
 	private long inexistingTableCacheTTL = TimeUnit.SECONDS.toMillis(3);
@@ -224,6 +224,14 @@ public class MongoStore implements Store, GenericStore
 		this.pwd = password;
 	}
 
+	public String getAuthenticationDatabase() {
+		return this.authDB;
+	}
+
+	public void setAuthenticationDatabase(String authDB) {
+		this.authDB = authDB;
+	}
+
 	/**
 	 * Minimum time during which a table known to exist will not be tested again for existence ; default value is 10 minutes.
 	 */
@@ -267,7 +275,7 @@ public class MongoStore implements Store, GenericStore
 			);
 
 			if (this.user != null) {
-				mongoClient = new MongoClient(new ServerAddress(host, port), Arrays.asList(MongoCredential.createCredential(this.user, this.getDb(), this.pwd.toCharArray())));
+				mongoClient = new MongoClient(new ServerAddress(host, port), Arrays.asList(MongoCredential.createCredential(this.user, this.authDB == null ? this.getDb() : this.authDB, this.pwd.toCharArray())));
 			} else {
 				mongoClient = new MongoClient(host, port);
 			}
