@@ -263,7 +263,7 @@ public class MongoStore implements Store, GenericStore
         try {
             Mongo.mongoLog.log(
                 Level.FINE,
-                "Trying to connect to the mongo database "+host+":"+port+(this.user == null ? " (no credentials)" : " (with credentials)"
+                "Trying to connect to the mongo database "+host+":"+port+(this.user == null ? " (no credentials)" : " (with credentials)")
 			);
 
 			if (this.user != null) {
