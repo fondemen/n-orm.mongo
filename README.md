@@ -15,6 +15,8 @@ class=com.googlecode.n_orm.mongo.MongoStore
 host=localhost
 port=27017
 db=mydb
+user=theuser # optional
+password=tH3p45sW0rD # optional
 ```
 Javadoc is available [here](https://fondemen.github.io/n-orm.mongo/mongoDB/apidocs/).
 
@@ -35,7 +37,7 @@ The first found file is the right file.
 
 ## Maven integration ##
 
-See the [getting started](https://github.com/fondemen/n-orm.core/wiki/GettingStarted#using-n-orm-with-maven) article, and the [pom](https://github.com/fondemen/n-orm.sample/blob/master/example-mongo-pom.xml) for the sample project.
+See the [getting started](https://github.com/fondemen/n-orm.core/wiki/GettingStarted#using-n-orm-with-maven) article, and the [pom](https://github.com/fondemen/n-orm.sample/blob/mongo/pom.xml) for the sample project.
 
 Instead of importing the `store` artifact, you can use the `mongo` one:
 ```
@@ -50,7 +52,7 @@ Instead of importing the `store` artifact, you can use the `mongo` one:
 
 ### Example `pom.xml` ###
 
-You can ispire yourself from the [sample project](https://github.com/fondemen/n-orm.sample).
+You can ispire yourself from the [sample project](https://github.com/fondemen/n-orm.sample/tree/mongo).
 
 ````
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

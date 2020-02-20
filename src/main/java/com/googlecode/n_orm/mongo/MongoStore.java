@@ -1,6 +1,7 @@
 package com.googlecode.n_orm.mongo;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,7 +33,9 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoCredential;
 import com.mongodb.MongoException;
+import com.mongodb.ServerAddress;
 
 
 public class MongoStore implements Store, GenericStore
@@ -96,6 +99,7 @@ public class MongoStore implements Store, GenericStore
 	private int    port = MONGO_PORT;
 	private String host = hostname;
 	private String db   = DB_NAME;
+	private String user,pwd;
 	
 	private long existingTableCacheTTL = TimeUnit.MINUTES.toMillis(10);
 	private long inexistingTableCacheTTL = TimeUnit.SECONDS.toMillis(3);
@@ -140,10 +144,15 @@ public class MongoStore implements Store, GenericStore
 
 	public static MongoStore getStore(Properties p) {
 		synchronized (MongoStore.class) {
+			System.out.println("finding store with " + p.toString());
 			MongoStore store = knownStores.get(p);
 
 			if (store == null) {
 				store = new MongoStore((String) p.get("address"), (Short) p.get("port"));
+				if (p.containsKey("user")) {
+					store.user = p.getProperty("user");
+					store.pwd = p.containsKey("password") ? p.getProperty("password") : "";
+				}
 			}
 
 			return store;
@@ -206,6 +215,18 @@ public class MongoStore implements Store, GenericStore
 		return mongoDB;
 	}
 
+	public String getUser() {
+		return this.user;
+	}
+
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	public void setPassword(String password) {
+		this.pwd = password;
+	}
+
 	/**
 	 * Minimum time during which a table known to exist will not be tested again for existence ; default value is 10 minutes.
 	 */
@@ -245,9 +266,14 @@ public class MongoStore implements Store, GenericStore
         try {
             Mongo.mongoLog.log(
                 Level.FINE,
-                "Trying to connect to the mongo database "+host+":"+port
-            );
-            mongoClient = new MongoClient(host, port);
+                "Trying to connect to the mongo database "+host+":"+port+(this.user == null ? " (no credentials)" : " (with credentials)")
+			);
+
+			if (this.user != null) {
+				mongoClient = new MongoClient(new ServerAddress(host, port), Arrays.asList(MongoCredential.createCredential(this.user, this.getDb(), this.pwd.toCharArray())));
+			} else {
+				mongoClient = new MongoClient(host, port);
+			}
 
         } catch(Exception e) {
             Mongo.mongoLog.log(
