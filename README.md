@@ -17,6 +17,7 @@ port=27017
 db=mydb
 user=theuser # optional
 password=tH3p45sW0rD # optional
+authenticationDatabase=admin # optional
 ```
 Javadoc is available [here](https://fondemen.github.io/n-orm.mongo/mongoDB/apidocs/).
 
