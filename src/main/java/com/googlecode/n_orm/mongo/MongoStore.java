@@ -33,6 +33,7 @@ import com.googlecode.n_orm.storeapi.Row.ColumnFamilyData;
 import com.googlecode.n_orm.storeapi.Store;
 import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoCredential;
 import com.mongodb.MongoException;
 import com.mongodb.ServerAddress;
@@ -283,7 +284,7 @@ public class MongoStore implements Store, GenericStore
 			);
 
 			if (this.user != null) {
-				mongoClient = new MongoClient(new ServerAddress(host, port), Arrays.asList(MongoCredential.createCredential(this.user, this.authDB == null ? this.getDb() : this.authDB, this.pwd.toCharArray())));
+				mongoClient = new MongoClient(new ServerAddress(host, port), MongoCredential.createCredential(this.user, this.authDB == null ? this.getDb() : this.authDB, this.pwd.toCharArray()), MongoClientOptions.builder().build());
 			} else {
 				mongoClient = new MongoClient(host, port);
 			}
